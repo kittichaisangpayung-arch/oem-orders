@@ -11,5 +11,5 @@ python-dateutil==2.9.0.post0
 reportlab==4.5.1
 python-barcode==0.16.1
 bahttext==1.0.2
-arabic-reshaper==3.0.1
+arabic-reshaper==3.0.0
 python-bidi==0.6.10
