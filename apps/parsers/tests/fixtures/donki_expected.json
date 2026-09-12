@@ -1,0 +1,676 @@
+{
+  "7010 PO. 525270 NEW LINE PRODUCT (DAILY) 04.09.2026.pdf": {
+    "store_code": "7010",
+    "store_name": "Central WestGate",
+    "order_no": "525270",
+    "expected_row_count": 7,
+    "parsed_row_count": 7,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 60.0,
+        "Total Amount": 3000
+      },
+      {
+        "Barcode": "2800000010362",
+        "Description": "Nama Pudding Matcha",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 60.0,
+        "Total Amount": 1800
+      },
+      {
+        "Barcode": "2800000010379",
+        "Description": "Nama Pudding Nutella",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010409",
+        "Description": "Tiramisu Cake 250g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 140.0,
+        "Total Amount": 7000
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 60.0,
+        "Total Amount": 900
+      },
+      {
+        "Barcode": "2800000010591",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 120.0,
+        "Total Amount": 1800
+      },
+      {
+        "Barcode": "2800000010393",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 140.0,
+        "Total Amount": 7000
+      }
+    ]
+  },
+  "PO 525004 4.09.26 Newline.pdf": {
+    "store_code": "7007",
+    "store_name": "Thaniya Plaza",
+    "order_no": "525004",
+    "expected_row_count": 7,
+    "parsed_row_count": 7,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010041",
+        "Description": "Nama Pudding Matcha",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 70.0,
+        "Total Amount": 700
+      },
+      {
+        "Barcode": "2800000011277",
+        "Description": "Nama Pudding Melon 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010386",
+        "Description": "Nama Pudding Honey",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010577",
+        "Description": "Nama Pudding Kyoho 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000011260",
+        "Description": "Basque Cheesecake 45g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 40.0,
+        "Total Amount": 2000
+      }
+    ]
+  },
+  "PO 525257 New Line 05.09.2026.pdf": {
+    "store_code": "7001",
+    "store_name": "Donki Thonglor",
+    "order_no": "525257",
+    "expected_row_count": 13,
+    "parsed_row_count": 13,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 60.0,
+        "Total Amount": 3000
+      },
+      {
+        "Barcode": "2800000010393",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 140.0,
+        "Total Amount": 7000
+      },
+      {
+        "Barcode": "2800000011598",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 90,
+        "Amount": 76.0,
+        "Total Amount": 6840
+      },
+      {
+        "Barcode": "2800000011604",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 107.0,
+        "Total Amount": 3210
+      },
+      {
+        "Barcode": "2800000010386",
+        "Description": "Nama Pudding Honey",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 60.0,
+        "Total Amount": 1800
+      },
+      {
+        "Barcode": "2800000010607",
+        "Description": "Hokkaido Peach",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 120.0,
+        "Total Amount": 3600
+      },
+      {
+        "Barcode": "2800000010409",
+        "Description": "Tiramisu Cake 250g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 140.0,
+        "Total Amount": 2800
+      },
+      {
+        "Barcode": "2800000010379",
+        "Description": "Nama Pudding Nutella",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010362",
+        "Description": "Nama Pudding Matcha",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000011086",
+        "Description": "Pudding Milk Cream",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 39.0,
+        "Total Amount": 1170
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010577",
+        "Description": "Nama Pudding Kyoho 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000011277",
+        "Description": "Nama Pudding Melon 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      }
+    ]
+  },
+  "PO 525334 04.09.2026 New Line.pdf": {
+    "store_code": "7005",
+    "store_name": "Seacon Bangkae",
+    "order_no": "525334",
+    "expected_row_count": 9,
+    "parsed_row_count": 9,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 25,
+        "Amount": 60.0,
+        "Total Amount": 1500
+      },
+      {
+        "Barcode": "2800000010577",
+        "Description": "Nama Pudding Kyoho 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 60.0,
+        "Total Amount": 900
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 60.0,
+        "Total Amount": 900
+      },
+      {
+        "Barcode": "2800000011277",
+        "Description": "Nama Pudding Melon 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 60.0,
+        "Total Amount": 900
+      },
+      {
+        "Barcode": "2800000011574",
+        "Description": "Yuzu Creamcheese",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 100,
+        "Amount": 59.0,
+        "Total Amount": 5900
+      },
+      {
+        "Barcode": "2800000011581",
+        "Description": "CLOUD CREPE FRESH",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 95.0,
+        "Total Amount": 2850
+      },
+      {
+        "Barcode": "2800000011598",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 60,
+        "Amount": 76.0,
+        "Total Amount": 4560
+      },
+      {
+        "Barcode": "2800000011604",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 107.0,
+        "Total Amount": 3210
+      },
+      {
+        "Barcode": "2800000011086",
+        "Description": "Pudding Milk Cream",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 39.0,
+        "Total Amount": 1950
+      }
+    ]
+  },
+  "PO NO.525346   New line  (Fashion)   01-09-2026.pdf": {
+    "store_code": "7008",
+    "store_name": "Fashion Island",
+    "order_no": "525346",
+    "expected_row_count": 5,
+    "parsed_row_count": 5,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 60.0,
+        "Total Amount": 1800
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 15,
+        "Amount": 60.0,
+        "Total Amount": 900
+      },
+      {
+        "Barcode": "2800000010386",
+        "Description": "Nama Pudding Honey",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010393",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 140.0,
+        "Total Amount": 7000
+      },
+      {
+        "Barcode": "2800000011260",
+        "Description": "Basque Cheesecake 45g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 100,
+        "Amount": 40.0,
+        "Total Amount": 4000
+      }
+    ]
+  },
+  "PO No.525360 New Line 1-09-2026.pdf": {
+    "store_code": "7003",
+    "store_name": "Seacon Square",
+    "order_no": "525360",
+    "expected_row_count": 11,
+    "parsed_row_count": 11,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010362",
+        "Description": "Nama Pudding Matcha",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010379",
+        "Description": "Nama Pudding Nutella",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010386",
+        "Description": "Nama Pudding Honey",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010409",
+        "Description": "Tiramisu Cake 250g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 140.0,
+        "Total Amount": 4200
+      },
+      {
+        "Barcode": "2800000010577",
+        "Description": "Nama Pudding Kyoho 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000010584",
+        "Description": "Nama Pudding Strawberry",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000011086",
+        "Description": "Pudding Milk Cream",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 39.0,
+        "Total Amount": 1950
+      },
+      {
+        "Barcode": "2800000011277",
+        "Description": "Nama Pudding Melon 75g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 10,
+        "Amount": 60.0,
+        "Total Amount": 600
+      },
+      {
+        "Barcode": "2800000011598",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 60,
+        "Amount": 76.0,
+        "Total Amount": 4560
+      },
+      {
+        "Barcode": "2800000011604",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 107.0,
+        "Total Amount": 3210
+      }
+    ]
+  },
+  "PO.NO.525033 New Line 04.09.26.pdf": {
+    "store_code": "7004",
+    "store_name": "MBK Center",
+    "order_no": "525033",
+    "expected_row_count": 12,
+    "parsed_row_count": 12,
+    "parser_used": "flexible",
+    "line_items": [
+      {
+        "Barcode": "2800000010355",
+        "Description": "Nama Pudding Hokkaido",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 70,
+        "Amount": 60.0,
+        "Total Amount": 4200
+      },
+      {
+        "Barcode": "2800000010362",
+        "Description": "Nama Pudding Matcha",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010379",
+        "Description": "Nama Pudding Nutella",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 60.0,
+        "Total Amount": 1800
+      },
+      {
+        "Barcode": "2800000010386",
+        "Description": "Nama Pudding Honey",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 20,
+        "Amount": 60.0,
+        "Total Amount": 1200
+      },
+      {
+        "Barcode": "2800000010393",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 150,
+        "Amount": 140.0,
+        "Total Amount": 21000
+      },
+      {
+        "Barcode": "2800000010409",
+        "Description": "Tiramisu Cake 250g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 140.0,
+        "Total Amount": 7000
+      },
+      {
+        "Barcode": "2800000010591",
+        "Description": "Hokkaido Cheesecake",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 120.0,
+        "Total Amount": 3600
+      },
+      {
+        "Barcode": "2800000010607",
+        "Description": "Hokkaido Peach",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 50,
+        "Amount": 120.0,
+        "Total Amount": 6000
+      },
+      {
+        "Barcode": "2800000011260",
+        "Description": "Basque Cheesecake 45g",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 100,
+        "Amount": 40.0,
+        "Total Amount": 4000
+      },
+      {
+        "Barcode": "2800000011581",
+        "Description": "CLOUD CREPE FRESH",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 95.0,
+        "Total Amount": 2850
+      },
+      {
+        "Barcode": "2800000011598",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 90,
+        "Amount": 76.0,
+        "Total Amount": 6840
+      },
+      {
+        "Barcode": "2800000011604",
+        "Description": "NAMA CHOCOLATE",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 90,
+        "Amount": 107.0,
+        "Total Amount": 9630
+      }
+    ]
+  },
+  "PO.NO.525747 New Line(เพิ่มเติม) 04.09.26.pdf": {
+    "store_code": "7004",
+    "store_name": "MBK Center",
+    "order_no": "525747",
+    "expected_row_count": 2,
+    "parsed_row_count": 2,
+    "parser_used": "strict",
+    "line_items": [
+      {
+        "Barcode": "2800000011086",
+        "Description": "Pudding Milk Cream",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 100,
+        "Amount": 39.0,
+        "Total Amount": 3900
+      },
+      {
+        "Barcode": "2800000011581",
+        "Description": "CLOUD CREPE FRESH",
+        "UOM": "PCS",
+        "Qty": 1,
+        "Qty2": 30,
+        "Amount": 95.0,
+        "Total Amount": 2850
+      }
+    ]
+  }
+}

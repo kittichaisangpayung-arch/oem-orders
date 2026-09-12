@@ -1,0 +1,404 @@
+{% extends "base.html" %}
+{% load static %}
+{% load thai_baht %}
+{% load humanize %}
+{% block title %}{{ dn.dn_number }}{% endblock %}
+{% block content %}
+<div class="dn-container">
+    <div class="no-print" style="margin-bottom: 16px;">
+        <button onclick="window.print()" style="background:#17a2b8; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🖨️ พิมพ์</button>
+        <a href="{% url 'dashboard:delivery_note_list' %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">← กลับ</a>
+        {% if dn.status == 'DRAFT' %}
+        <form method="post" action="{% url 'dashboard:confirm_delivery_note' dn.id %}" style="display: inline; margin-left: 8px;">
+            {% csrf_token %}
+            <button type="submit" style="background:#28a745; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">✓ Confirm</button>
+        </form>
+        {% endif %}
+        <form method="post" action="{% url 'dashboard:delete_delivery_note' dn.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Delivery Note นี้?');">
+            {% csrf_token %}
+            <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🗑️ ลบ</button>
+        </form>
+    </div>
+
+    {% for page_items in pages %}
+    <!-- PAGE {{ forloop.counter }}: Delivery Note Document -->
+    <div class="dn-page">
+        <!-- Header with Logo -->
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 150px; vertical-align: top;">
+                    <!-- Logo -->
+                    {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="{{ company.name_th }}" style="width: 120px; height: auto; max-height: 80px; object-fit: contain;">
+                    {% else %}
+                    <div style="width: 120px; height: 80px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
+                        LOGO
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top; text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">{{ company.name_th }}</div>
+                    <div style="font-size: 10px; line-height: 1.4;">
+                        {{ company.name_en }}<br>
+                        {{ company.address }}<br>
+                        โทรศัพท์: {{ company.phone }}{% if company.fax %} แฟกซ์: {{ company.fax }}{% endif %}<br>
+                        Tax ID: {{ company.tax_id }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Title -->
+        <div style="text-align: center; margin: 10px 0;">
+            <div style="font-size: 20px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0;">
+                ใบส่งสินค้า / DELIVERY NOTE {% if forloop.counter > 1 %}(หน้า {{ forloop.counter }}){% endif %}
+            </div>
+        </div>
+
+        <!-- DN Info Row -->
+        <table style="width: 100%; margin-bottom: 8px; font-size: 11px; border: 1px solid #000;">
+            <tr>
+                <td style="width: 50%; padding: 6px; border-right: 1px solid #000;">
+                    <strong>Company:</strong> {{ dn.store.customer.name }}
+                </td>
+                <td style="width: 50%; padding: 6px;">
+                    <strong>No.:</strong> {{ dn.dn_number }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Address:</strong> {{ dn.store.customer.name }} (Head Office)<br>
+                    {% if dn.customer_head_office_address %}
+                    <span style="margin-left: 20px;">{{ dn.customer_head_office_address|linebreaksbr }}</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"m/d/Y" }}{% else %}{{ dn.created_at|date:"m/d/Y" }}{% endif %}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Delivery Address:</strong> {{ dn.store.name }}<br>
+                    <span style="margin-left: 20px;">{{ dn.delivery_address|linebreaksbr }}</span>
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    <strong>PO No.:</strong> {{ dn.po_numbers|default:"-" }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Tax:</strong> {{ dn.customer_tax_id|default:"-" }}
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    <strong>Payment terms:</strong> {{ dn.payment_terms }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="dn-items-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+                <tr style="background: #e8e8e8;">
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 40px;">ลำดับ / No.</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 80px;">รูปภาพ / Image</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center;">รายการสินค้า / Description</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 100px;">Barcode</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 70px;">จำนวน / Qty</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">หน่วย / Unit</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 90px;">ราคา/หน่วย / Unit Price</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 100px;">จำนวนเงิน / Amount</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 80px;">หมายเหตุ / Remark</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in page_items %}
+                <tr>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">{{ item.line_no }}</td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center;">
+                        {% if item.product.image %}
+                            <img src="{{ item.product.image.url }}" alt="{{ item.product.description }}"
+                                 style="width: 60px; height: 60px; object-fit: contain;">
+                        {% else %}
+                            <div style="width: 60px; height: 60px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #999;">
+                                NO IMAGE
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px;">
+                        <div style="font-size: 10px; line-height: 1.3;">{{ item.product.description }}</div>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 10px;">{{ item.product.barcode }}</div>
+                        <!-- Barcode image placeholder -->
+                        <svg style="width: 80px; height: 30px; margin-top: 2px;">
+                            <rect width="2" height="30" x="0" fill="#000"/>
+                            <rect width="1" height="30" x="3" fill="#000"/>
+                            <rect width="3" height="30" x="5" fill="#000"/>
+                            <rect width="1" height="30" x="9" fill="#000"/>
+                            <rect width="2" height="30" x="11" fill="#000"/>
+                            <rect width="1" height="30" x="14" fill="#000"/>
+                            <rect width="3" height="30" x="16" fill="#000"/>
+                            <rect width="2" height="30" x="20" fill="#000"/>
+                            <rect width="1" height="30" x="23" fill="#000"/>
+                            <rect width="2" height="30" x="25" fill="#000"/>
+                            <rect width="3" height="30" x="28" fill="#000"/>
+                            <rect width="1" height="30" x="32" fill="#000"/>
+                            <rect width="2" height="30" x="34" fill="#000"/>
+                            <rect width="1" height="30" x="37" fill="#000"/>
+                            <rect width="3" height="30" x="39" fill="#000"/>
+                            <rect width="2" height="30" x="43" fill="#000"/>
+                            <rect width="1" height="30" x="46" fill="#000"/>
+                            <rect width="2" height="30" x="48" fill="#000"/>
+                            <rect width="3" height="30" x="51" fill="#000"/>
+                            <rect width="1" height="30" x="55" fill="#000"/>
+                            <rect width="2" height="30" x="57" fill="#000"/>
+                            <rect width="1" height="30" x="60" fill="#000"/>
+                            <rect width="3" height="30" x="62" fill="#000"/>
+                            <rect width="2" height="30" x="66" fill="#000"/>
+                            <rect width="1" height="30" x="69" fill="#000"/>
+                            <rect width="2" height="30" x="71" fill="#000"/>
+                            <rect width="3" height="30" x="74" fill="#000"/>
+                            <rect width="1" height="30" x="78" fill="#000"/>
+                        </svg>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">
+                        {{ item.quantity|intcomma }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        {{ item.product.uom }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: right;">
+                        {{ item.unit_price|floatformat:2|intcomma }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">
+                        {{ item.amount|floatformat:2|intcomma }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-size: 10px;">
+                        {% if item.claimed_quantity > 0 %}
+                            <span style="color: #d9534f; font-weight: bold;">เคลม: {{ item.claimed_quantity|intcomma }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            {% if forloop.last %}
+            <tfoot>
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td colspan="7" style="border: 1px solid #000; padding: 8px; text-align: right; font-size: 12px;">
+                        รวมเงิน (ยังไม่รวม VAT) / Subtotal:
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; font-weight: bold;">
+                        {{ dn.subtotal|floatformat:2|intcomma }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">บาท</td>
+                </tr>
+            </tfoot>
+            {% endif %}
+        </table>
+
+        {% if forloop.first %}
+        <!-- Notes -->
+        <div style="margin: 15px 0; padding: 8px; border: 1px solid #000; min-height: 50px; font-size: 11px;">
+            <strong>หมายเหตุ / Remarks:</strong>
+            <div style="margin-top: 5px;">{{ dn.notes|default:"" }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Signature Section -->
+        <table style="width: 100%; margin-top: 30px; font-size: 11px;">
+            <tr>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้จัดเตรียมสินค้า</div>
+                    <div style="margin-top: 3px;">Prepared By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้ส่งสินค้า</div>
+                    <div style="margin-top: 3px;">Delivered By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้รับสินค้า</div>
+                    <div style="margin-top: 3px;">Received By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="margin: 0;">*** กรุณาตรวจสอบสินค้าให้ถูกต้องก่อนรับสินค้าทุกครั้ง / Please check all items before acceptance ***</p>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- PAGE 2: Financial Summary -->
+    <div class="dn-page page-2">
+        <!-- Header with Logo -->
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 150px; vertical-align: top;">
+                    {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="{{ company.name_th }}" style="width: 120px; height: auto; max-height: 80px; object-fit: contain;">
+                    {% else %}
+                    <div style="width: 120px; height: 80px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
+                        LOGO
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top; text-align: center;">
+                    <div style="font-size: 22px; font-weight: bold; margin-bottom: 5px;">{{ company.name_th }}</div>
+                    <div style="font-size: 11px; line-height: 1.4;">
+                        {{ company.address }}<br>
+                        โทรศัพท์: {{ company.phone }}{% if company.fax %} แฟกซ์: {{ company.fax }}{% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Title -->
+        <div style="text-align: center; margin: 15px 0;">
+            <div style="font-size: 24px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0;">
+                ใบส่งสินค้า / DELIVERY NOTE (หน้า {{ pages|length|add:1 }})
+            </div>
+        </div>
+
+        <!-- DN Info Row -->
+        <table style="width: 100%; margin-bottom: 20px; font-size: 12px;">
+            <tr>
+                <td style="width: 70%;">
+                    <strong>เลขที่เอกสาร / Document No.:</strong> <span style="font-size: 14px; font-weight: bold;">{{ dn.dn_number }}</span>
+                </td>
+                <td style="width: 30%; text-align: right;">
+                    <strong>วันที่ / Date:</strong> {{ dn.created_at|date:"d/m/Y" }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Financial Summary Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
+            <tbody>
+                <tr>
+                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center; background: #e8e8e8; font-weight: bold;">
+                        สรุปยอดเงิน / Financial Summary
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px; width: 50%;">จำนวนสินค้ารวมทั้งหมด / Total Quantity:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; width: 30%;">{{ total_quantity|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; width: 20%; text-align: center;">ชิ้น</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px;">ราคาสินค้า (ยังไม่รวม VAT) / Subtotal:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">{{ dn.subtotal|floatformat:2|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">บาท</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px;">ภาษีมูลค่าเพิ่ม {{ dn.vat_rate }}% / VAT {{ dn.vat_rate }}%:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">{{ dn.vat_amount|floatformat:2|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">บาท</td>
+                </tr>
+                <tr style="background: #f5f5f5;">
+                    <td style="border: 2px solid #000; padding: 12px; font-weight: bold; font-size: 14px;">
+                        ยอดรวมทั้งสิ้น / Grand Total:
+                    </td>
+                    <td style="border: 2px solid #000; padding: 12px; text-align: right; font-weight: bold; font-size: 16px;">
+                        {{ dn.grand_total|floatformat:2|intcomma }}
+                    </td>
+                    <td style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold;">
+                        บาท
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="border: 1px solid #000; padding: 10px; font-size: 11px;">
+                        <strong>ตัวอักษร:</strong> {{ dn.grand_total|thai_baht_text }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Payment Information -->
+        <div style="border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-size: 11px; line-height: 1.8;">
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+                ข้อมูลการชำระเงิน / Payment Information
+            </div>
+            <div><strong>หมายเหตุ:</strong> การโอนเงินไปยังชื่อบัญชี: <strong>{{ company.bank_account_name }}</strong></div>
+            <div style="margin-top: 8px;"><strong>เงื่อนไขการชำระเงิน:</strong> {{ dn.payment_terms }}</div>
+            <div style="margin-top: 8px;">
+                <strong>ธนาคาร:</strong> {{ company.bank_name }}<br>
+                <strong>รหัส Swift:</strong> {{ company.bank_swift }}<br>
+                <strong>เลขที่บัญชี:</strong> {{ company.bank_account_no }}
+            </div>
+        </div>
+
+        <!-- Additional Notes -->
+        <div style="border: 1px solid #000; padding: 12px; margin-bottom: 20px; min-height: 80px; font-size: 11px;">
+            <strong>หมายเหตุเพิ่มเติม / Additional Notes:</strong>
+            <div style="margin-top: 8px;">
+                {{ dn.notes|default:"" }}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="margin: 0;">ขอบคุณที่ใช้บริการ / Thank you for your business</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.dn-container {
+    max-width: 210mm;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+}
+
+.dn-page {
+    background: #fff;
+    padding: 15mm 20mm;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 297mm;
+    margin-bottom: 20px;
+}
+
+.page-2 {
+    margin-top: 20px;
+}
+
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .dn-container {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .dn-page {
+        padding: 10mm 15mm;
+        box-shadow: none;
+        page-break-after: always;
+        margin-bottom: 0;
+    }
+
+    nav {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}

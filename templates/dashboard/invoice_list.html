@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Invoice List{% endblock %}
+{% block content %}
+<div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>รายการ Invoice</h2>
+        <a href="{% url 'dashboard:create_invoice' %}" style="background: #28a745; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none;">+ สร้าง Invoice</a>
+    </div>
+
+    <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ค้นหา</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="Invoice Number, ลูกค้า"
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ลูกค้า</label>
+                <select name="customer" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.id }}" {% if customer_filter == customer.id|stringformat:"s" %}selected{% endif %}>{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width: 120px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">สถานะ</label>
+                <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>Draft</option>
+                    <option value="ISSUED" {% if status_filter == 'ISSUED' %}selected{% endif %}>Issued</option>
+                    <option value="PAID" {% if status_filter == 'PAID' %}selected{% endif %}>Paid</option>
+                </select>
+            </div>
+            <div style="min-width: 100px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">เดือน</label>
+                <select name="month" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    {% for m in "123456789" %}
+                    <option value="{{ m }}" {% if month_filter == m %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                    {% for m in "101112" %}
+                    <option value="1{{ m }}" {% if month_filter == "1"|add:m %}selected{% endif %}>1{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width: 100px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ปี</label>
+                <input type="number" name="year" value="{{ year_filter }}" placeholder="2024" min="2020" max="2030"
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button type="submit" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">ค้นหา</button>
+                <a href="{% url 'dashboard:invoice_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
+            </div>
+        </div>
+    </form>
+
+    <table style="width: 100%; border-collapse: collapse; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <thead>
+            <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                <th style="padding: 12px; text-align: left;">เลขที่ Invoice</th>
+                <th style="padding: 12px; text-align: left;">ลูกค้า</th>
+                <th style="padding: 12px; text-align: center;">เดือน/ปี</th>
+                <th style="padding: 12px; text-align: right;">ยอดรวม</th>
+                <th style="padding: 12px; text-align: center;">สถานะ</th>
+                <th style="padding: 12px; text-align: center;">วันที่สร้าง</th>
+                <th style="padding: 12px; text-align: center;">จัดการ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices %}
+            <tr style="border-bottom: 1px solid #dee2e6;">
+                <td style="padding: 12px;">
+                    <a href="{% url 'dashboard:invoice_detail' invoice.id %}" style="color: #007bff; text-decoration: none; font-weight: bold;">
+                        {{ invoice.invoice_number }}
+                    </a>
+                </td>
+                <td style="padding: 12px;">{{ invoice.customer.name }}</td>
+                <td style="padding: 12px; text-align: center;">{{ invoice.invoice_month }}/{{ invoice.invoice_year }}</td>
+                <td style="padding: 12px; text-align: right; font-weight: bold;">{{ invoice.grand_total|floatformat:2 }}</td>
+                <td style="padding: 12px; text-align: center;">
+                    {% if invoice.status == 'DRAFT' %}
+                    <span style="background: #ffc107; color: #000; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Draft</span>
+                    {% elif invoice.status == 'ISSUED' %}
+                    <span style="background: #17a2b8; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Issued</span>
+                    {% elif invoice.status == 'PAID' %}
+                    <span style="background: #28a745; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 12px;">Paid</span>
+                    {% else %}
+                    <span style="background: #6c757d; color: #fff; padding: 4px 8px; border-radius: 3px; font-size: 12px;">{{ invoice.status }}</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px; text-align: center;">{{ invoice.created_at|date:"d/m/Y" }}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <a href="{% url 'dashboard:invoice_detail' invoice.id %}" style="color: #007bff; text-decoration: none; margin-right: 8px;">ดู</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
+                    ไม่มี Invoice<br>
+                    <a href="{% url 'dashboard:create_invoice' %}" style="color: #007bff; margin-top: 10px; display: inline-block;">สร้าง Invoice ใหม่</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

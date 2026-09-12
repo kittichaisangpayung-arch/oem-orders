@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}ตารางขนส่งแต่ละสาขา{% endblock %}
+{% block content %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h2>ตารางขนส่งแต่ละสาขา (สำหรับแผนกขนส่ง)</h2>
+        {% if single_batch_id %}
+        <a href="{% url 'dashboard:create_delivery_notes' single_batch_id %}" style="background:#28a745; color:#fff; border:none; padding:10px 20px; border-radius:4px; text-decoration:none; font-weight:bold; display:inline-block;">
+            📄 สร้าง Delivery Notes
+        </a>
+        {% endif %}
+    </div>
+
+    <form method="get" class="filters">
+        <select name="batch">
+            <option value="">-- ทุก Batch --</option>
+            {% for b in batches %}
+                <option value="{{ b.pk }}" {% if request.GET.batch == b.pk|stringformat:"s" %}selected{% endif %}>
+                    #{{ b.pk }} - {{ b.customer }} ({{ b.uploaded_at|date:"d/m/Y H:i" }})
+                </option>
+            {% endfor %}
+        </select>
+        <select name="customer">
+            <option value="">-- ทุกลูกค้า --</option>
+            {% for c in customers %}
+                <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}" placeholder="จากวันที่">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}" placeholder="ถึงวันที่">
+        <button type="submit">กรอง</button>
+        <button type="button" onclick="window.print()" style="background:#17a2b8;">🖨️ พิมพ์</button>
+    </form>
+
+    <div style="overflow-x: auto; margin-top: 16px;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 2px solid #34495e; padding: 8px;">รูป</th>
+                    <th rowspan="2" style="position: sticky; left: 50px; background: #2c3e50; color: #fff; z-index: 10; border: 2px solid #34495e; padding: 8px; min-width: 250px;">รายการสินค้า</th>
+                    {% for store_name in store_names %}
+                        <th colspan="2" style="border: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; background: {% cycle '#e3f2fd' '#fff3e0' %}; text-align: center; font-weight: bold;">{{ store_name }}</th>
+                    {% endfor %}
+                    <th colspan="2" style="border: 2px solid #856404; padding: 8px; background: #fff3cd; font-weight: bold;">รวม</th>
+                </tr>
+                <tr>
+                    {% for store_name in store_names %}
+                        <th style="border-right: 1px solid #ddd; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 4px; background: {% cycle '#bbdefb' '#ffe0b2' %}; font-size: 11px;">รวม</th>
+                        <th style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 4px; background: {% cycle '#c8e6c9' '#c5e1a5' %}; font-size: 11px;">เคลม</th>
+                    {% endfor %}
+                    <th style="border: 2px solid #856404; border-top: none; padding: 4px; background: #fff9e6; font-size: 11px; font-weight: bold;">รวม</th>
+                    <th style="border: 2px solid #856404; border-top: none; padding: 4px; background: #e8f5e9; font-size: 11px; font-weight: bold;">เคลม</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in table_rows %}
+                <tr>
+                    <td style="position: sticky; left: 0; background: #fff; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 4px;">
+                        {% if row.product.image %}
+                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                        {% else %}
+                            <span style="color:#ccc;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="position: sticky; left: 50px; background: #fff; z-index: 5; border: 1px solid #dee2e6; padding: 8px; font-weight: bold;">{{ row.product.description }}</td>
+                    {% for cell in row.cells %}
+                        <td style="border-right: 1px solid #ddd; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% if cell.qty > 0 %}{% cycle '#e3f2fd' '#fff3e0' %}{% else %}#fff{% endif %}; {% if cell.qty > 0 %}font-weight: bold;{% endif %}">
+                            {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
+                        </td>
+                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; padding: 8px; text-align: center; background: {% if cell.claimed > 0 %}{% cycle '#c8e6c9' '#c5e1a5' %}{% else %}#f9f9f9{% endif %}; {% if cell.claimed > 0 %}color: #2e7d32; font-weight: bold;{% endif %}">
+                            {% if cell.claimed > 0 %}{{ cell.claimed }}{% else %}-{% endif %}
+                        </td>
+                    {% endfor %}
+                    <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 8px; text-align: center; background: #fff3cd; font-weight: bold;">{{ row.row_total }}</td>
+                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: #e8f5e9; {% if row.row_claim_total > 0 %}color: #2e7d32; font-weight: bold;{% endif %}">
+                        {% if row.row_claim_total > 0 %}{{ row.row_claim_total }}{% else %}-{% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f8f9fa; font-weight: bold;">
+                    <td colspan="2" style="border: 2px solid #34495e; padding: 8px; text-align: right; background: #ecf0f1;">รวมทั้งหมด:</td>
+                    {% for i in store_totals %}
+                        <td style="border-right: 1px solid #ddd; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% cycle '#bbdefb' '#ffe0b2' %}; font-weight: bold;">{{ store_totals|slice:forloop.counter0|slice:":1"|first }}</td>
+                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% cycle '#c8e6c9' '#c5e1a5' %}; font-weight: bold; color: #2e7d32;">{{ store_claim_totals|slice:forloop.counter0|slice:":1"|first }}</td>
+                    {% endfor %}
+                    <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 8px; text-align: center; background: #ffc107; font-size: 18px;">{{ grand_total }}</td>
+                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: #66bb6a; color: #fff; font-size: 18px;">{{ grand_claim_total }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <p style="margin-top: 16px; font-size: 13px; color: #666;">
+        ตารางนี้แสดงจำนวนสินค้าที่ต้องขนส่งไปแต่ละสาขา (คอลัมน์ "รวม" = ยอดสั่ง + เคลมหลังปรับขั้นต่ำ, คอลัมน์ "เคลม" = ยอดเคลมอย่างเดียว)
+    </p>
+</div>
+
+<style>
+@media print {
+    .filters, nav, .card h2 {
+        display: none !important;
+    }
+
+    table {
+        font-size: 9px !important;
+    }
+
+    th, td {
+        padding: 2px !important;
+    }
+
+    body {
+        margin: 0;
+        padding: 10px;
+    }
+
+    .card {
+        box-shadow: none;
+        padding: 0;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ยืนยันการลบลูกค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยืนยันการลบ</h2>
+    <p>ต้องการลบลูกค้า "{{ object }}" ใช่หรือไม่? (สาขาทั้งหมดของลูกค้านี้จะถูกลบไปด้วย)</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">ยืนยันลบ</button>
+        <a href="{% url 'manage_data:customer_list' %}">ยกเลิก</a>
+    </form>
+</div>
+{% endblock %}

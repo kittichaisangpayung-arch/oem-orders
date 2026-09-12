@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+{% load static %}
+{% load thai_baht %}
+{% load humanize %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block content %}
+<div class="invoice-container">
+    <div class="no-print" style="margin-bottom: 16px;">
+        <button onclick="window.print()" style="background:#17a2b8; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🖨️ พิมพ์</button>
+        <a href="{% url 'dashboard:invoice_list' %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">← กลับ</a>
+        <a href="{% url 'dashboard:edit_invoice' invoice.id %}" style="background: #ffc107; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">✏️ แก้ไข</a>
+        <form method="post" action="{% url 'dashboard:delete_invoice' invoice.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Invoice นี้?');">
+            {% csrf_token %}
+            <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🗑️ ลบ</button>
+        </form>
+    </div>
+
+    <!-- PAGE 1: Invoice Document -->
+    <div class="invoice-page">
+        <!-- Header with Logo -->
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 150px; vertical-align: top;">
+                    <!-- Logo -->
+                    {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="{{ company.name_th }}" style="width: 120px; height: auto; max-height: 80px; object-fit: contain;">
+                    {% else %}
+                    <div style="width: 120px; height: 80px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
+                        LOGO
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top; text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; margin-bottom: 5px;">{{ company.name_th }}</div>
+                    <div style="font-size: 10px; line-height: 1.4;">
+                        {{ company.name_en }}<br>
+                        {{ company.address }}<br>
+                        โทรศัพท์: {{ company.phone }}{% if company.fax %} แฟกซ์: {{ company.fax }}{% endif %}<br>
+                        Tax ID: {{ company.tax_id }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Title -->
+        <div style="text-align: center; margin: 10px 0;">
+            <div style="font-size: 20px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0;">
+                ใบแจ้งหนี้ / INVOICE
+            </div>
+        </div>
+
+        <!-- Invoice Info Row -->
+        <table style="width: 100%; margin-bottom: 8px; font-size: 11px; border: 1px solid #000;">
+            <tr>
+                <td style="width: 50%; padding: 6px; border-right: 1px solid #000;">
+                    <strong>Company:</strong> {{ invoice.customer.name }}
+                </td>
+                <td style="width: 50%; padding: 6px;">
+                    <strong>No.:</strong> {{ invoice.invoice_number }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Address:</strong> {{ invoice.customer.name }} (Head Office)<br>
+                    {% if invoice.billing_address %}
+                    <span style="margin-left: 20px;">{{ invoice.billing_address|linebreaksbr }}</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    <strong>Date:</strong> {{ invoice.created_at|date:"m/d/Y" }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Tax:</strong> {{ invoice.customer_tax_id|default:"-" }}
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    <strong>Payment terms:</strong> {{ invoice.payment_terms }}
+                </td>
+            </tr>
+            <tr>
+                <td style="padding: 6px; border-right: 1px solid #000; border-top: 1px solid #000;">
+                    <strong>Period:</strong> {{ invoice.invoice_month }}/{{ invoice.invoice_year }}
+                </td>
+                <td style="padding: 6px; border-top: 1px solid #000;">
+                    {% if invoice.due_date %}
+                    <strong>Due Date:</strong> {{ invoice.due_date|date:"m/d/Y" }}
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Items Table -->
+        <table class="invoice-items-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+            <thead>
+                <tr style="background: #e8e8e8;">
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 40px;">ลำดับ / No.</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 150px;">เลขที่เอกสาร / Document No.</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center;">รายการสินค้า / Description</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 80px;">จำนวน / Qty</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 60px;">หน่วย / Unit</th>
+                    <th style="border: 1px solid #000; padding: 6px; text-align: center; width: 120px;">จำนวนเงิน / Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for item in invoice.line_items.all %}
+                <tr>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">{{ item.line_no }}</td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        {% if item.external_invoice_number %}
+                            {{ item.external_invoice_number }}
+                        {% else %}
+                            {{ item.delivery_note.dn_number }}
+                        {% endif %}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px;">
+                        <div style="font-size: 10px; line-height: 1.3;">{{ item.description }}</div>
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight: bold; font-size: 13px;">
+                        {{ item.quantity|intcomma }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: center;">
+                        {{ item.unit }}
+                    </td>
+                    <td style="border: 1px solid #000; padding: 6px; text-align: right; font-weight: bold;">
+                        {{ item.amount|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td colspan="5" style="border: 1px solid #000; padding: 8px; text-align: right; font-size: 12px;">
+                        รวมเงิน (ยังไม่รวม VAT) / Subtotal:
+                    </td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-size: 13px; font-weight: bold;">
+                        {{ invoice.subtotal|floatformat:2|intcomma }}
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Notes -->
+        <div style="margin: 15px 0; padding: 8px; border: 1px solid #000; min-height: 50px; font-size: 11px;">
+            <strong>หมายเหตุ / Remarks:</strong>
+            <div style="margin-top: 5px;">{{ invoice.notes|default:"" }}</div>
+        </div>
+
+        <!-- Signature Section -->
+        <table style="width: 100%; margin-top: 30px; font-size: 11px;">
+            <tr>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้จัดเตรียมเอกสาร</div>
+                    <div style="margin-top: 3px;">Prepared By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้อนุมัติ</div>
+                    <div style="margin-top: 3px;">Approved By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+                <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
+                    <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
+                    <div>ผู้รับเอกสาร</div>
+                    <div style="margin-top: 3px;">Received By</div>
+                    <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Footer -->
+        <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="margin: 0;">*** กรุณาชำระเงินภายในกำหนด / Please pay within the due date ***</p>
+        </div>
+    </div>
+
+    <!-- PAGE 2: Financial Summary -->
+    <div class="invoice-page page-2">
+        <!-- Header with Logo -->
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 150px; vertical-align: top;">
+                    {% if company.logo %}
+                    <img src="{{ company.logo.url }}" alt="{{ company.name_th }}" style="width: 120px; height: auto; max-height: 80px; object-fit: contain;">
+                    {% else %}
+                    <div style="width: 120px; height: 80px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #999;">
+                        LOGO
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="vertical-align: top; text-align: center;">
+                    <div style="font-size: 22px; font-weight: bold; margin-bottom: 5px;">{{ company.name_th }}</div>
+                    <div style="font-size: 11px; line-height: 1.4;">
+                        {{ company.address }}<br>
+                        โทรศัพท์: {{ company.phone }}{% if company.fax %} แฟกซ์: {{ company.fax }}{% endif %}
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Title -->
+        <div style="text-align: center; margin: 15px 0;">
+            <div style="font-size: 24px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0;">
+                ใบแจ้งหนี้ / INVOICE (หน้า 2)
+            </div>
+        </div>
+
+        <!-- Invoice Info Row -->
+        <table style="width: 100%; margin-bottom: 20px; font-size: 12px;">
+            <tr>
+                <td style="width: 70%;">
+                    <strong>เลขที่เอกสาร / Document No.:</strong> <span style="font-size: 14px; font-weight: bold;">{{ invoice.invoice_number }}</span>
+                </td>
+                <td style="width: 30%; text-align: right;">
+                    <strong>วันที่ / Date:</strong> {{ invoice.created_at|date:"d/m/Y" }}
+                </td>
+            </tr>
+        </table>
+
+        <!-- Financial Summary Table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 20px;">
+            <tbody>
+                <tr>
+                    <td colspan="3" style="border: 1px solid #000; padding: 8px; text-align: center; background: #e8e8e8; font-weight: bold;">
+                        สรุปยอดเงิน / Financial Summary
+                    </td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px; width: 50%;">จำนวนสินค้ารวมทั้งหมด / Total Quantity:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; width: 30%;">{{ total_quantity|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; width: 20%; text-align: center;">ชิ้น</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px;">ราคาสินค้า (ยังไม่รวม VAT) / Subtotal:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">{{ invoice.subtotal|floatformat:2|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">บาท</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #000; padding: 8px;">ภาษีมูลค่าเพิ่ม {{ invoice.vat_rate }}% / VAT {{ invoice.vat_rate }}%:</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: right; font-weight: bold;">{{ invoice.vat_amount|floatformat:2|intcomma }}</td>
+                    <td style="border: 1px solid #000; padding: 8px; text-align: center;">บาท</td>
+                </tr>
+                <tr style="background: #f5f5f5;">
+                    <td style="border: 2px solid #000; padding: 12px; font-weight: bold; font-size: 14px;">
+                        ยอดรวมทั้งสิ้น / Grand Total:
+                    </td>
+                    <td style="border: 2px solid #000; padding: 12px; text-align: right; font-weight: bold; font-size: 16px;">
+                        {{ invoice.grand_total|floatformat:2|intcomma }}
+                    </td>
+                    <td style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold;">
+                        บาท
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" style="border: 1px solid #000; padding: 10px; font-size: 11px;">
+                        <strong>ตัวอักษร:</strong> {{ invoice.grand_total|thai_baht_text }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Payment Information -->
+        <div style="border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-size: 11px; line-height: 1.8;">
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px;">
+                ข้อมูลการชำระเงิน / Payment Information
+            </div>
+            <div><strong>หมายเหตุ:</strong> การโอนเงินไปยังชื่อบัญชี: <strong>{{ company.bank_account_name }}</strong></div>
+            <div style="margin-top: 8px;"><strong>เงื่อนไขการชำระเงิน:</strong> {{ invoice.payment_terms }}</div>
+            <div style="margin-top: 8px;">
+                <strong>ธนาคาร:</strong> {{ company.bank_name }}<br>
+                <strong>รหัส Swift:</strong> {{ company.bank_swift }}<br>
+                <strong>เลขที่บัญชี:</strong> {{ company.bank_account_no }}
+            </div>
+        </div>
+
+        <!-- Additional Notes -->
+        <div style="border: 1px solid #000; padding: 12px; margin-bottom: 20px; min-height: 80px; font-size: 11px;">
+            <strong>หมายเหตุเพิ่มเติม / Additional Notes:</strong>
+            <div style="margin-top: 8px;">
+                {{ invoice.notes|default:"" }}
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
+            <p style="margin: 0;">ขอบคุณที่ใช้บริการ / Thank you for your business</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.invoice-container {
+    max-width: 210mm;
+    margin: 0 auto;
+    background: #fff;
+    padding: 20px;
+}
+
+.invoice-page {
+    background: #fff;
+    padding: 15mm 20mm;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    min-height: 297mm;
+    margin-bottom: 20px;
+}
+
+.page-2 {
+    margin-top: 20px;
+}
+
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .invoice-container {
+        max-width: 100%;
+        padding: 0;
+    }
+
+    .invoice-page {
+        padding: 10mm 15mm;
+        box-shadow: none;
+        page-break-after: always;
+        margin-bottom: 0;
+    }
+
+    nav {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}

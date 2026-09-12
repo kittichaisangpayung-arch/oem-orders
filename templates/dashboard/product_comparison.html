@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load dict_extras %}
+
+{% block title %}Product Comparison{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-sm btn-outline-secondary mb-2">
+                ← Change Selection
+            </a>
+            <h2>Product Comparison</h2>
+        </div>
+
+        <!-- Time Range Filter -->
+        <div class="btn-group" role="group">
+            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=3"
+               class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 Months</a>
+            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=6"
+               class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
+            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=12"
+               class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        Comparing <strong>{{ comparison_data|length }}</strong> products from
+        <strong>{{ start_date|date:"M d, Y" }}</strong> to <strong>{{ end_date|date:"M d, Y" }}</strong>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        {% for data in comparison_data %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">
+                        {% if data.product.image %}
+                        <img src="{{ data.product.image.url }}" alt="" style="width: 24px; height: 24px; object-fit: cover;">
+                        {% endif %}
+                        {{ data.product.description|truncatewords:5 }}
+                    </h6>
+                    <h4 class="mb-1">{{ data.total_qty|intcomma }}</h4>
+                    <small class="text-muted">{{ data.total_value|floatformat:0|intcomma }} ฿</small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Comparison Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Monthly Order Comparison</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="comparisonChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Monthly Breakdown Table</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            {% for data in comparison_data %}
+                            <th class="text-end">
+                                {{ data.product.description|truncatewords:4 }}
+                                <br><small class="text-muted">{{ data.product.barcode }}</small>
+                            </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in all_months reversed %}
+                        <tr>
+                            <td><strong>{{ month }}</strong></td>
+                            {% for data in comparison_data %}
+                            <td class="text-end">
+                                {% if data.monthly_data|get_item:month %}
+                                    {{ data.monthly_data|get_item:month|intcomma }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                        <tr class="table-light fw-bold">
+                            <td>TOTAL</td>
+                            {% for data in comparison_data %}
+                            <td class="text-end">{{ data.total_qty|intcomma }}</td>
+                            {% endfor %}
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+    // Color palette (using accessible colors)
+    const colors = [
+        '#0d6efd', // Blue
+        '#198754', // Green
+        '#dc3545', // Red
+        '#fd7e14', // Orange
+        '#6f42c1', // Purple
+        '#0dcaf0', // Cyan
+    ];
+
+    const allMonths = {{ all_months|safe }};
+
+    const datasets = [
+        {% for data in comparison_data %}
+        {
+            label: '{{ data.product.description|truncatewords:6|escapejs }}',
+            data: allMonths.map(month => {
+                const monthlyData = {{ data.monthly_data|safe }};
+                return monthlyData[month] || 0;
+            }),
+            borderColor: colors[{{ forloop.counter0 }} % colors.length],
+            backgroundColor: colors[{{ forloop.counter0 }} % colors.length] + '20',
+            borderWidth: 2,
+            fill: false,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const config = {
+        type: 'line',
+        data: {
+            labels: allMonths,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    };
+
+    new Chart(ctx, config);
+});
+</script>
+{% endblock %}

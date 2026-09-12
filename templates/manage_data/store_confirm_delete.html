@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ยืนยันการลบสาขา{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยืนยันการลบ</h2>
+    <p>ต้องการลบสาขา "{{ object }}" ใช่หรือไม่?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">ยืนยันลบ</button>
+        <a href="{% url 'manage_data:store_list' %}">ยกเลิก</a>
+    </form>
+</div>
+{% endblock %}

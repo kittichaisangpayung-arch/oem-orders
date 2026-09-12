@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}ยอดผลิตรวม{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยอดผลิตรวมต่อสินค้า</h2>
+    <form method="get" class="filters">
+        <select name="batch">
+            <option value="">-- ทุก Batch --</option>
+            {% for b in batches %}
+                <option value="{{ b.pk }}" {% if request.GET.batch == b.pk|stringformat:"s" %}selected{% endif %}>
+                    #{{ b.pk }} - {{ b.customer }} ({{ b.uploaded_at|date:"d/m/Y H:i" }})
+                </option>
+            {% endfor %}
+        </select>
+        <select name="customer">
+            <option value="">-- ทุกลูกค้า --</option>
+            {% for c in customers %}
+                <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}">
+        <button type="submit">กรอง</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="label">รูป</th>
+                <th class="label">Barcode</th>
+                <th class="label">รายการสินค้า</th>
+                <th>ยอดสั่งรวม (Qty2)</th>
+                <th>เคลม</th>
+                <th>ยอดผลิตสุทธิ</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in totals %}
+            <tr>
+                <td class="label" style="text-align:center; padding:4px;">
+                    {% if row.product__image %}
+                        <img src="/media/{{ row.product__image }}" alt="{{ row.product__description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                    {% else %}
+                        <span style="color:#ccc;">-</span>
+                    {% endif %}
+                </td>
+                <td class="label">{{ row.product__barcode|default:"(unmapped)" }}</td>
+                <td class="label">{{ row.product__description }}</td>
+                <td>{{ row.original_qty }}</td>
+                <td>{{ row.claimed_qty }}</td>
+                <td>{{ row.net_qty2 }}</td>
+            </tr>
+        {% endfor %}
+        {% if unmapped_total %}
+            <tr>
+                <td class="label" colspan="2"><em>Barcode ที่ไม่พบในระบบ</em></td>
+                <td>{{ unmapped_total }}</td>
+                <td></td>
+                <td></td>
+            </tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

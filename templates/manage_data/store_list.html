@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}จัดการสาขา{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>สาขา</h2>
+    <p><a href="{% url 'manage_data:store_add' %}">+ เพิ่มสาขา</a></p>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">ลูกค้า</th>
+                <th class="label">Store Code</th>
+                <th class="label">ชื่อสาขา</th>
+                <th>สถานะ</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for store in stores %}
+            <tr>
+                <td class="label">{{ store.customer }}</td>
+                <td class="label">{{ store.store_code }}</td>
+                <td class="label">{{ store.name }}</td>
+                <td>{% if store.is_active %}Active{% else %}Inactive{% endif %}</td>
+                <td class="label">
+                    <a href="{% url 'manage_data:store_edit' store.pk %}">แก้ไข</a>
+                    &middot;
+                    <a href="{% url 'manage_data:store_delete' store.pk %}">ลบ</a>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="card">
+    <p>
+        <a href="{% url 'manage_data:customer_list' %}">จัดการลูกค้า</a>
+        &middot;
+        <a href="{% url 'manage_data:product_list' %}">จัดการสินค้า</a>
+    </p>
+</div>
+{% endblock %}

@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}{{ product.description }} - Trend Analysis{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'dashboard:product_trend_list' %}?months={{ months }}" class="btn btn-sm btn-outline-secondary mb-2">
+                ← Back to List
+            </a>
+            <h2>
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.description }}"
+                     style="width: 50px; height: 50px; object-fit: cover; margin-right: 12px;">
+                {% endif %}
+                {{ product.description }}
+            </h2>
+            <p class="text-muted mb-0">Barcode: <code>{{ product.barcode }}</code></p>
+        </div>
+
+        <!-- Time Range Filter -->
+        <div class="btn-group" role="group">
+            <a href="?months=6" class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
+            <a href="?months=12" class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
+            <a href="?months=24" class="btn btn-sm btn-outline-primary {% if months == 24 %}active{% endif %}">24 Months</a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Quantity</h6>
+                    <h3 class="mb-0">{{ summary.total_qty|intcomma }}</h3>
+                    <small class="text-muted">{{ months }} months</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Total Value</h6>
+                    <h3 class="mb-0">{{ summary.total_value|floatformat:0|intcomma }} ฿</h3>
+                    <small class="text-muted">{{ months }} months</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Avg Monthly Qty</h6>
+                    <h3 class="mb-0">{{ summary.avg_monthly_qty|floatformat:0|intcomma }}</h3>
+                    <small class="
+                        {% if summary.trend_direction == 'increasing' %}text-success
+                        {% elif summary.trend_direction == 'decreasing' %}text-danger
+                        {% else %}text-muted{% endif %}
+                    ">
+                        {% if summary.trend_direction == 'increasing' %}↑ Increasing
+                        {% elif summary.trend_direction == 'decreasing' %}↓ Decreasing
+                        {% else %}→ Stable{% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="text-muted mb-2">Batches</h6>
+                    <h3 class="mb-0">{{ summary.total_batches }}</h3>
+                    <small class="text-muted">{{ summary.total_stores }} stores</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trend Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Monthly Order Trend</h5>
+        </div>
+        <div class="card-body">
+            <canvas id="trendChart" height="80"></canvas>
+        </div>
+    </div>
+
+    <!-- Monthly Data Table -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Monthly Breakdown</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>Month</th>
+                            <th class="text-end">Quantity</th>
+                            <th class="text-end">Value (฿)</th>
+                            <th class="text-end">Avg Price</th>
+                            <th class="text-center">Batches</th>
+                            <th class="text-center">Stores</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in monthly_trend reversed %}
+                        <tr>
+                            <td><strong>{{ month.month_display }}</strong></td>
+                            <td class="text-end">{{ month.qty|intcomma }}</td>
+                            <td class="text-end">{{ month.value|floatformat:2|intcomma }}</td>
+                            <td class="text-end">{{ month.avg_price|floatformat:2 }}</td>
+                            <td class="text-center">{{ month.batch_count }}</td>
+                            <td class="text-center">{{ month.store_count }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Store Distribution -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Store Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Store</th>
+                                    <th class="text-end">Total Qty</th>
+                                    <th class="text-end">Orders</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for store in store_distribution|slice:":10" %}
+                                <tr>
+                                    <td>{{ store.store }}</td>
+                                    <td class="text-end">{{ store.qty|intcomma }}</td>
+                                    <td class="text-end">{{ store.orders }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch History -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Recent Batches</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Batch</th>
+                                    <th>Date</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-center">Stores</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for batch in batch_history|slice:":10" %}
+                                <tr>
+                                    <td><strong>Batch #{{ batch.batch.id }}</strong></td>
+                                    <td>{{ batch.batch.uploaded_at|date:"M d, Y" }}</td>
+                                    <td class="text-end">{{ batch.qty|intcomma }}</td>
+                                    <td class="text-center">{{ batch.store_count }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('trendChart').getContext('2d');
+
+    const data = {
+        labels: [{% for month in monthly_trend %}'{{ month.month_display }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Quantity Ordered',
+            data: [{% for month in monthly_trend %}{{ month.qty }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            borderColor: '#0d6efd',
+            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+        }]
+    };
+
+    const config = {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Quantity: ' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString();
+                        }
+                    },
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    };
+
+    new Chart(ctx, config);
+});
+</script>
+{% endblock %}

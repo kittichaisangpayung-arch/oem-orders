@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Delivery Notes{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>Delivery Notes</h2>
+
+    <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ค้นหา</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="DN Number, Store"
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">สถานะ</label>
+                <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    <option value="DRAFT" {% if status_filter == 'DRAFT' %}selected{% endif %}>Draft</option>
+                    <option value="CONFIRMED" {% if status_filter == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                    <option value="DELIVERED" {% if status_filter == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button type="submit" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">ค้นหา</button>
+                <a href="{% url 'dashboard:delivery_note_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
+            </div>
+        </div>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="label">DN Number</th>
+                <th class="label">Store</th>
+                <th class="label">Batch</th>
+                <th>Status</th>
+                <th>Created By</th>
+                <th>Created At</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for dn in delivery_notes %}
+            <tr>
+                <td class="label"><strong>{{ dn.dn_number }}</strong></td>
+                <td class="label">{{ dn.store.name }}</td>
+                <td class="label">
+                    {% if dn.batch %}
+                        <a href="{% url 'dashboard:shipping_summary' %}?batch={{ dn.batch.pk }}">Batch #{{ dn.batch.pk }}</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="padding: 4px 8px; border-radius: 4px; font-size: 12px;
+                        {% if dn.status == 'DRAFT' %}background: #fff3cd; color: #856404;
+                        {% elif dn.status == 'CONFIRMED' %}background: #d1ecf1; color: #0c5460;
+                        {% elif dn.status == 'DELIVERED' %}background: #d4edda; color: #155724;
+                        {% endif %}">
+                        {{ dn.get_status_display }}
+                    </span>
+                </td>
+                <td>{{ dn.created_by.username|default:"-" }}</td>
+                <td>{{ dn.created_at|date:"d/m/Y H:i" }}</td>
+                <td>
+                    <a href="{% url 'dashboard:delivery_note_detail' dn.pk %}" style="color: #007bff; text-decoration: none;">View</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #666;">ไม่พบข้อมูล</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

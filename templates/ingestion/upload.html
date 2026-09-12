@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}อัปโหลด PO{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>อัปโหลด PO PDF</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>
+            <label>ลูกค้า:</label>
+            {{ form.customer }}
+        </p>
+        <p>
+            <label>{{ form.upload_date.label }}:</label><br>
+            {{ form.upload_date }}
+            {% if form.upload_date.help_text %}
+            <small style="color:#7f8c8d; display:block; margin-top:4px;">{{ form.upload_date.help_text }}</small>
+            {% endif %}
+        </p>
+        <p>
+            <label>ไฟล์ PDF (เลือกได้หลายไฟล์):</label><br>
+            {{ form.files }}
+        </p>
+        {% if form.errors %}
+            <p style="color:#c0392b;">{{ form.errors }}</p>
+        {% endif %}
+        <button type="submit">อัปโหลดและประมวลผล</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Batch ล่าสุด</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">Batch</th>
+                <th class="label">ลูกค้า</th>
+                <th class="label">อัปโหลดเมื่อ</th>
+                <th>สถานะ</th>
+                <th class="label"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for b in recent_batches %}
+            <tr>
+                <td class="label"><a href="{% url 'ingestion:batch_result' b.pk %}">#{{ b.pk }}</a></td>
+                <td class="label">{{ b.customer }}</td>
+                <td class="label">{{ b.uploaded_at|date:"d/m/Y H:i" }}</td>
+                <td class="status-{{ b.status }}">{{ b.get_status_display }}</td>
+                <td class="label">
+                    {% if user.is_staff %}
+                    <form method="post" action="{% url 'ingestion:delete_batch' b.pk %}" onsubmit="return confirm('ยืนยันลบ Batch #{{ b.pk }}? PO และรายการสินค้าทั้งหมดในนี้จะถูกลบไปด้วย');" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" style="background:#c0392b; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">ลบ</button>
+                    </form>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

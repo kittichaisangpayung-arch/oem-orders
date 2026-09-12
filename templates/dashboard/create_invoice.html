@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}สร้าง Invoice{% endblock %}
+{% block content %}
+<div style="max-width: 800px; margin: 0 auto; padding: 20px;">
+    <h2 style="margin-bottom: 20px;">สร้าง Invoice จาก Delivery Notes</h2>
+
+    <form method="post" style="background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">ลูกค้า:</label>
+            <select name="customer_id" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">-- เลือกลูกค้า --</option>
+                {% for customer in customers %}
+                <option value="{{ customer.id }}">{{ customer.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: bold;">เดือน/ปี:</label>
+            <select name="year_month" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">-- เลือกเดือน/ปี --</option>
+                {% for year, month in months %}
+                <option value="{{ year }}-{{ month }}">{{ month }}/{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" style="flex: 1; background: #28a745; color: #fff; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                สร้าง Invoice
+            </button>
+            <a href="{% url 'dashboard:invoice_list' %}" style="flex: 1; background: #6c757d; color: #fff; border: none; padding: 12px; border-radius: 4px; text-align: center; text-decoration: none; font-size: 16px;">
+                ยกเลิก
+            </a>
+        </div>
+    </form>
+
+    <div style="margin-top: 30px; padding: 20px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
+        <h4 style="margin-top: 0;">หมายเหตุ:</h4>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>Invoice จะรวม Delivery Notes ทั้งหมดของลูกค้าในเดือนที่เลือก</li>
+            <li>จะใช้ Delivery Notes ที่มีสถานะ "Confirmed" เท่านั้น</li>
+            <li>แต่ละ Delivery Note จะแสดงเป็น 1 บรรทัดใน Invoice</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+document.querySelector('form').addEventListener('submit', function(e) {
+    const yearMonth = document.querySelector('select[name="year_month"]').value;
+    if (yearMonth) {
+        const [year, month] = yearMonth.split('-');
+
+        // Create hidden inputs for year and month
+        const yearInput = document.createElement('input');
+        yearInput.type = 'hidden';
+        yearInput.name = 'year';
+        yearInput.value = year;
+
+        const monthInput = document.createElement('input');
+        monthInput.type = 'hidden';
+        monthInput.name = 'month';
+        monthInput.value = month;
+
+        this.appendChild(yearInput);
+        this.appendChild(monthInput);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ยืนยันการลบสินค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยืนยันการลบ</h2>
+    <p>ต้องการลบสินค้า "{{ object }}" ใช่หรือไม่?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">ยืนยันลบ</button>
+        <a href="{% url 'manage_data:product_list' %}">ยกเลิก</a>
+    </form>
+</div>
+{% endblock %}

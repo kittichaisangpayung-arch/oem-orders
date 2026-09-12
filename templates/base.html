@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}OEM Orders{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --pink: #FF8FAB;
+            --pink-dark: #E85D8C;
+            --pink-light: #FFE3EC;
+            --cream: #FFF8F0;
+            --cream-dark: #FDEEDC;
+            --purple: #B185DB;
+            --purple-light: #F1E4FB;
+            --mint: #8FD9C4;
+            --text-dark: #5C4033;
+            --text-muted: #9C8577;
+        }
+
+        body {
+            font-family: "Noto Sans Thai", Arial, sans-serif;
+            margin: 0;
+            background: var(--cream);
+            background-image: radial-gradient(circle at top left, var(--purple-light) 0%, transparent 45%),
+                               radial-gradient(circle at top right, var(--pink-light) 0%, transparent 45%);
+            color: var(--text-dark);
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--pink) 0%, var(--pink-dark) 55%, var(--purple) 100%);
+            padding: 14px 22px;
+            display: flex;
+            gap: 18px;
+            align-items: center;
+            box-shadow: 0 3px 10px rgba(232, 93, 140, 0.25);
+            flex-wrap: wrap;
+        }
+
+        nav a {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            transition: background 0.2s ease, transform 0.15s ease;
+        }
+
+        nav a:hover {
+            background: rgba(255, 255, 255, 0.25);
+            text-decoration: none;
+            transform: translateY(-1px);
+        }
+
+        nav .spacer { flex: 1; }
+
+        nav span {
+            color: #fff;
+            font-weight: 600;
+            background: rgba(255,255,255,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+
+        h1, h2, h3 {
+            font-family: "Baloo 2", "Noto Sans Thai", sans-serif;
+            color: var(--pink-dark);
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+        }
+
+        th, td {
+            border: 1px solid var(--cream-dark);
+            padding: 8px 12px;
+            text-align: right;
+            font-size: 14px;
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+            color: var(--pink-dark);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        td.label, th.label { text-align: left; max-width: 260px; white-space: normal; word-break: break-word; }
+
+        tbody tr:hover { background: var(--cream); }
+
+        .below-min { background: #FFE0E6; }
+        .overridden { background: var(--purple-light); }
+
+        .card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            margin-bottom: 18px;
+            box-shadow: 0 4px 14px rgba(184, 132, 219, 0.15);
+            border: 1px solid #FBE4EF;
+        }
+
+        .status-OK { color: #2E9E6C; font-weight: 600; }
+        .status-PARTIAL { color: #D99A2B; font-weight: 600; }
+        .status-FAILED { color: #E0507A; font-weight: 600; }
+
+        .filters { margin-bottom: 16px; }
+        .filters select, .filters input {
+            margin-right: 8px;
+            padding: 8px 10px;
+            border: 1px solid #F3C9DC;
+            border-radius: 8px;
+            background: #fff;
+            font-family: inherit;
+        }
+
+        button, .btn, input[type="submit"] {
+            font-family: inherit;
+        }
+
+        a { color: var(--pink-dark); }
+
+        ::selection { background: var(--pink-light); }
+    </style>
+</head>
+<body>
+<nav>
+    <a href="{% url 'dashboard:executive_dashboard' %}">🍰 Dashboard</a>
+    <a href="{% url 'dashboard:production' %}">ยอดผลิตรวม</a>
+    <a href="{% url 'dashboard:factory_summary' %}">ยอดผลิตตามกลุ่ม</a>
+    <a href="{% url 'dashboard:store_matrix' %}">ยอดขนส่งต่อสาขา</a>
+    <a href="{% url 'dashboard:shipping_summary' %}">ตารางขนส่ง</a>
+    <a href="{% url 'dashboard:product_trend_list' %}">แนวโน้มสินค้า</a>
+    <a href="{% url 'dashboard:delivery_note_list' %}">Delivery Notes</a>
+    <a href="{% url 'dashboard:invoice_list' %}">Invoices</a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'ingestion:upload' %}">อัปโหลด PO</a>
+    {% endif %}
+    <div class="spacer"></div>
+    {% if user.is_authenticated %}
+        <span>{{ user.username }}</span>
+        <form method="post" action="{% url 'logout' %}" style="display:inline">
+            {% csrf_token %}
+            <button type="submit" style="background:none;border:none;color:#fff;cursor:pointer;text-decoration:underline;font-weight:600;">ออกจากระบบ</button>
+        </form>
+    {% else %}
+        <a href="{% url 'login' %}">เข้าสู่ระบบ</a>
+    {% endif %}
+</nav>
+<main>
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

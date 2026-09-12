@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าขั้นต่ำสินค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ตั้งค่าจำนวนขั้นต่ำต่อสินค้า</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">Barcode</th>
+                <th class="label">รายการสินค้า</th>
+                <th class="label">UOM</th>
+                <th>ขั้นต่ำ</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in rows %}
+            <tr>
+                <td class="label">{{ row.product.barcode }}</td>
+                <td class="label">{{ row.product.description }}</td>
+                <td class="label">{{ row.product.uom }}</td>
+                <td>
+                    <form method="post" style="display:flex; gap:6px; justify-content:flex-end; align-items:center;">
+                        {% csrf_token %}
+                        <input type="hidden" name="product_id" value="{{ row.product.pk }}">
+                        {{ row.form.min_order_qty }}
+                        <button type="submit">บันทึก</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}เคลม{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>เลือก Batch และสาขา</h2>
+    <form method="get" class="filters">
+        <select name="batch" onchange="this.form.submit()">
+            <option value="">-- เลือก Batch --</option>
+            {% for b in recent_batches %}
+                <option value="{{ b.pk }}" {% if selected_batch and selected_batch.pk == b.pk %}selected{% endif %}>
+                    #{{ b.pk }} - {{ b.customer }} ({{ b.uploaded_at|date:"d/m/Y H:i" }})
+                </option>
+            {% endfor %}
+        </select>
+
+        {% if selected_batch %}
+            <select name="store" onchange="this.form.submit()">
+                <option value="">-- เลือกสาขา --</option>
+                {% for po in batch_pos %}
+                    <option value="{{ po.pk }}" {% if selected_po and selected_po.pk == po.pk %}selected{% endif %}>
+                        {{ po.store|default:po.store_name_raw }}
+                    </option>
+                {% endfor %}
+            </select>
+        {% endif %}
+    </form>
+</div>
+
+{% if selected_po %}
+<div class="card">
+    <h2>กรอกยอดเคลม - Batch #{{ selected_batch.pk }} / {{ selected_po.store|default:selected_po.store_name_raw }}</h2>
+    {% if form %}
+    <form method="post" action="?batch={{ selected_batch.pk }}&store={{ selected_po.pk }}" class="filters">
+        {% csrf_token %}
+        <input type="hidden" name="purchase_order" value="{{ selected_po.pk }}">
+        {{ form.as_p }}
+        <button type="submit">บันทึกเคลม</button>
+    </form>
+    {% else %}
+    <p>PO นี้ไม่มีรายการสินค้า</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>เคลมล่าสุด</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">Batch</th>
+                <th class="label">PO</th>
+                <th class="label">สาขา</th>
+                <th class="label">สินค้า</th>
+                <th>จำนวนเคลม</th>
+                <th class="label">หมายเหตุ</th>
+                <th class="label">วันที่</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for claim in claims %}
+            <tr>
+                <td class="label">{% if claim.purchase_order %}#{{ claim.purchase_order.batch_id }}{% endif %}</td>
+                <td class="label">{% if claim.purchase_order %}#{{ claim.purchase_order.pk }}{% endif %}</td>
+                <td class="label">{{ claim.store }}</td>
+                <td class="label">{{ claim.product }}</td>
+                <td>{{ claim.qty }}</td>
+                <td class="label">{{ claim.note }}</td>
+                <td class="label">{{ claim.created_at|date:"d/m/Y H:i" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

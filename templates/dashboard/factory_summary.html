@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}ยอดผลิตแยกตามกลุ่มสินค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยอดผลิตแยกตามกลุ่มสินค้า</h2>
+    <form method="get" class="filters">
+        <select name="batch">
+            <option value="">-- ทุก Batch --</option>
+            {% for b in batches %}
+                <option value="{{ b.pk }}" {% if request.GET.batch == b.pk|stringformat:"s" %}selected{% endif %}>
+                    #{{ b.pk }} - {{ b.customer }} ({{ b.uploaded_at|date:"d/m/Y H:i" }})
+                </option>
+            {% endfor %}
+        </select>
+        <select name="customer">
+            <option value="">-- ทุกลูกค้า --</option>
+            {% for c in customers %}
+                <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <select name="group">
+            <option value="">-- ทุกกลุ่มสินค้า --</option>
+            {% for g in all_groups %}
+                <option value="{{ g }}" {% if request.GET.group == g %}selected{% endif %}>{{ g }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}">
+        <button type="submit">กรอง</button>
+    </form>
+
+    {% for group in groups %}
+    <div style="margin-top: 30px;">
+        <h3 style="background-color: #f0f0f0; padding: 10px; margin-bottom: 0;">
+            <a href="?group={{ group.group_name }}{% if request.GET.batch %}&batch={{ request.GET.batch }}{% endif %}{% if request.GET.customer %}&customer={{ request.GET.customer }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}"
+               style="color: #2c3e50; text-decoration: none;">
+                {{ group.group_name }}
+            </a>
+            <span style="float: right; color: #0066cc;">ยอดรวม: {{ group.total_qty }} ชิ้น</span>
+        </h3>
+        <table>
+            <thead>
+                <tr>
+                    <th class="label">รูป</th>
+                    <th class="label">Barcode</th>
+                    <th class="label">รายการสินค้า</th>
+                    <th>ยอดสั่งรวม (Qty2)</th>
+                    <th>เคลม</th>
+                    <th>ยอดผลิตสุทธิ</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for product in group.products %}
+                <tr>
+                    <td class="label" style="text-align:center; padding:4px;">
+                        {% if product.image %}
+                            <img src="/media/{{ product.image }}" alt="{{ product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                        {% else %}
+                            <span style="color:#ccc;">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="label">{{ product.barcode|default:"(unmapped)" }}</td>
+                    <td class="label">{{ product.description }}</td>
+                    <td>{{ product.total_qty2 }}</td>
+                    <td>{{ product.claimed_qty }}</td>
+                    <td><strong>{{ product.net_qty2 }}</strong></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endfor %}
+
+    {% if unmapped_total %}
+    <div style="margin-top: 30px;">
+        <h3 style="background-color: #fff3cd; padding: 10px;">สินค้าที่ไม่มี Barcode หรือไม่พบในระบบ</h3>
+        <p style="padding: 10px;">ยอดรวม: <strong>{{ unmapped_total }}</strong> ชิ้น</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

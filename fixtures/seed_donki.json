@@ -1,0 +1,322 @@
+[
+  {
+    "model": "core.customer",
+    "pk": 1,
+    "fields": {
+      "name": "Donki (Thailand) Co., Ltd.",
+      "code": "DONKI",
+      "parser_key": "donki_v1",
+      "is_active": true,
+      "created_at": "2026-09-06T11:50:49.886103+00:00",
+      "updated_at": "2026-09-06T11:50:49.886103+00:00"
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 2,
+    "fields": {
+      "customer": 1,
+      "store_code": "7001",
+      "name": "Donki Thonglor",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 3,
+    "fields": {
+      "customer": 1,
+      "store_code": "7004",
+      "name": "MBK Center",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 4,
+    "fields": {
+      "customer": 1,
+      "store_code": "7006",
+      "name": "J-park Sriracha",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 5,
+    "fields": {
+      "customer": 1,
+      "store_code": "7003",
+      "name": "Seacon Square",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 6,
+    "fields": {
+      "customer": 1,
+      "store_code": "7007",
+      "name": "Thaniya Plaza",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 7,
+    "fields": {
+      "customer": 1,
+      "store_code": "7005",
+      "name": "Seacon Bangkae",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 8,
+    "fields": {
+      "customer": 1,
+      "store_code": "7008",
+      "name": "Fashion Island",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.store",
+    "pk": 9,
+    "fields": {
+      "customer": 1,
+      "store_code": "7010",
+      "name": "Central WestGate",
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 10,
+    "fields": {
+      "barcode": "2800000011086",
+      "description": "Pudding Milk Cream",
+      "uom": "PCS",
+      "min_order_qty": 0,
+      "sort_rank": 0,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 11,
+    "fields": {
+      "barcode": "2800000010355",
+      "description": "Nama Pudding Hokkaido",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 12,
+    "fields": {
+      "barcode": "2800000010379",
+      "description": "Nama Pudding Nutella",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 13,
+    "fields": {
+      "barcode": "2800000010362",
+      "description": "Nama Pudding Matcha",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 3,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 14,
+    "fields": {
+      "barcode": "2800000010386",
+      "description": "Nama Pudding Honey",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 4,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 15,
+    "fields": {
+      "barcode": "2800000010584",
+      "description": "Nama Pudding Strawberry",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 5,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 16,
+    "fields": {
+      "barcode": "2800000010577",
+      "description": "Nama Pudding Kyoho 75g",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 6,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 17,
+    "fields": {
+      "barcode": "2800000010393",
+      "description": "Hokkaido Cheesecake",
+      "uom": "PCS",
+      "min_order_qty": 50,
+      "sort_rank": 7,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 18,
+    "fields": {
+      "barcode": "2800000010409",
+      "description": "Tiramisu Cake 250g",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 8,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 19,
+    "fields": {
+      "barcode": "2800000010607",
+      "description": "Hokkaido Peach",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 9,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 20,
+    "fields": {
+      "barcode": "2800000010591",
+      "description": "Hokkaido Cheesecake",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 10,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 21,
+    "fields": {
+      "barcode": "2800000011260",
+      "description": "Basque Cheesecake 45g",
+      "uom": "PCS",
+      "min_order_qty": 100,
+      "sort_rank": 11,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 22,
+    "fields": {
+      "barcode": "2800000011277",
+      "description": "Nama Pudding Melon 75g",
+      "uom": "PCS",
+      "min_order_qty": 10,
+      "sort_rank": 12,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 23,
+    "fields": {
+      "barcode": "2800000011390",
+      "description": "",
+      "uom": "PCS",
+      "min_order_qty": 100,
+      "sort_rank": 13,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 24,
+    "fields": {
+      "barcode": "2800000011574",
+      "description": "Yuzu Creamcheese",
+      "uom": "PCS",
+      "min_order_qty": 100,
+      "sort_rank": 14,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 25,
+    "fields": {
+      "barcode": "2800000011598",
+      "description": "NAMA CHOCOLATE",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 15,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 26,
+    "fields": {
+      "barcode": "2800000011604",
+      "description": "NAMA CHOCOLATE",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 16,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 27,
+    "fields": {
+      "barcode": "2800000011581",
+      "description": "CLOUD CREPE FRESH",
+      "uom": "PCS",
+      "min_order_qty": 30,
+      "sort_rank": 17,
+      "is_active": true
+    }
+  },
+  {
+    "model": "core.product",
+    "pk": 28,
+    "fields": {
+      "barcode": "2800000010041",
+      "description": "Nama Pudding Matcha",
+      "uom": "PCS",
+      "min_order_qty": 0,
+      "sort_rank": 18,
+      "is_active": true
+    }
+  }
+]

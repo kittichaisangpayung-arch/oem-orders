@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}เลือกวันส่ง - Delivery Notes{% endblock %}
+{% block content %}
+<div style="max-width: 1000px; margin: 0 auto; padding: 20px;">
+    <h2 style="margin-bottom: 20px;">เลือกวันส่งสำหรับแต่ละสาขา</h2>
+    <p style="color: #6c757d; margin-bottom: 20px;">Batch: {{ batch.batch_name }}</p>
+
+    <form method="post" style="background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        {% csrf_token %}
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+            <thead>
+                <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 12px; text-align: left;">สาขา / Store</th>
+                    <th style="padding: 12px; text-align: left;">ลูกค้า / Customer</th>
+                    <th style="padding: 12px; text-align: left; width: 200px;">วันส่ง / Delivery Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for store in stores %}
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    <td style="padding: 12px; font-weight: bold;">{{ store.name }}</td>
+                    <td style="padding: 12px;">{{ store.customer.name }}</td>
+                    <td style="padding: 12px;">
+                        <input type="date" name="delivery_date_{{ store.id }}"
+                               value="{{ today|date:'Y-m-d' }}"
+                               style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3" style="padding: 20px; text-align: center; color: #6c757d;">
+                        ไม่พบสาขาในแบทช์นี้
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div style="display: flex; gap: 10px;">
+            <button type="submit" style="flex: 1; background: #28a745; color: #fff; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-size: 16px;">
+                สร้าง Delivery Notes
+            </button>
+            <a href="{% url 'dashboard:shipping_summary' %}" style="flex: 1; background: #6c757d; color: #fff; border: none; padding: 12px; border-radius: 4px; text-align: center; text-decoration: none; font-size: 16px;">
+                ยกเลิก
+            </a>
+        </div>
+    </form>
+
+    <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
+        <h4 style="margin-top: 0;">หมายเหตุ:</h4>
+        <ul style="margin: 0; padding-left: 20px;">
+            <li>เลือกวันส่งสำหรับแต่ละสาขา</li>
+            <li>ค่าเริ่มต้นคือวันนี้</li>
+            <li>สามารถเลือกวันเดียวกันหรือต่างกันได้</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

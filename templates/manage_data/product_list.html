@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}จัดการสินค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>สินค้า</h2>
+    <p><a href="{% url 'manage_data:product_add' %}">+ เพิ่มสินค้า</a></p>
+
+    <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
+            <div style="flex: 1; min-width: 200px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ค้นหา</label>
+                <input type="text" name="search" value="{{ search }}" placeholder="Barcode, รายการสินค้า"
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            </div>
+            <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">สถานะ</label>
+                <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button type="submit" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">ค้นหา</button>
+                <a href="{% url 'manage_data:product_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
+            </div>
+        </div>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="label">Barcode</th>
+                <th class="label">รายการสินค้า</th>
+                <th class="label">UOM</th>
+                <th>ขั้นต่ำ</th>
+                <th>สถานะ</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for product in products %}
+            <tr>
+                <td class="label">{{ product.barcode }}</td>
+                <td class="label">{{ product.description }}</td>
+                <td class="label">{{ product.uom }}</td>
+                <td>{{ product.min_order_qty }}</td>
+                <td>{% if product.is_active %}Active{% else %}Inactive{% endif %}</td>
+                <td class="label">
+                    <a href="{% url 'manage_data:product_edit' product.pk %}">แก้ไข</a>
+                    &middot;
+                    <a href="{% url 'manage_data:product_delete' product.pk %}">ลบ</a>
+                </td>
+            </tr>
+        {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; padding: 20px; color: #666;">ไม่พบข้อมูล</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+<div class="card">
+    <p>
+        <a href="{% url 'manage_data:customer_list' %}">จัดการลูกค้า</a>
+        &middot;
+        <a href="{% url 'manage_data:store_list' %}">จัดการสาขา</a>
+    </p>
+</div>
+{% endblock %}

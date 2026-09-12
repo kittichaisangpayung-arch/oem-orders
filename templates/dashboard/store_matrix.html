@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% block title %}ยอดขนส่งต่อสาขา{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ยอดขายรวมต่อสาขา</h2>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">สาขา</th>
+                <th>ยอดเงินรวม</th>
+                <th>จำนวนหลังปรับขั้นต่ำ</th>
+                <th>ยอดเงินหลังปรับขั้นต่ำ</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in store_totals %}
+            <tr>
+                <td class="label">{{ row.name }}</td>
+                <td>{{ row.total_amount|floatformat:2 }}</td>
+                <td>{{ row.adjusted_total }}</td>
+                <td>{{ row.adjusted_amount|floatformat:2 }}</td>
+            </tr>
+        {% endfor %}
+            <tr>
+                <td class="label"><strong>รวมทั้งหมด</strong></td>
+                <td><strong>{{ grand_total|floatformat:2 }}</strong></td>
+                <td><strong>{{ grand_adjusted_total }}</strong></td>
+                <td><strong>{{ grand_adjusted_amount|floatformat:2 }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+<div class="card">
+    <h2>ยอดขนส่งต่อสาขา (Qty2)</h2>
+    <form method="get" class="filters">
+        <select name="batch">
+            <option value="">-- ทุก Batch --</option>
+            {% for b in batches %}
+                <option value="{{ b.pk }}" {% if request.GET.batch == b.pk|stringformat:"s" %}selected{% endif %}>
+                    #{{ b.pk }} - {{ b.customer }} ({{ b.uploaded_at|date:"d/m/Y H:i" }})
+                </option>
+            {% endfor %}
+        </select>
+        <select name="customer">
+            <option value="">-- ทุกลูกค้า --</option>
+            {% for c in customers %}
+                <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="date" name="date_from" value="{{ request.GET.date_from }}">
+        <input type="date" name="date_to" value="{{ request.GET.date_to }}">
+        <button type="submit">กรอง</button>
+    </form>
+
+    <table>
+        <thead>
+            <tr>
+                <th class="label" rowspan="2">รูป</th>
+                <th class="label" rowspan="2">Barcode</th>
+                <th class="label" rowspan="2">รายการสินค้า</th>
+                {% for store_name in store_names %}
+                    <th colspan="2">{{ store_name }}</th>
+                {% endfor %}
+                {% if single_batch_id %}
+                    <th rowspan="2" style="background:#fff3cd;">เคลม</th>
+                {% endif %}
+            </tr>
+            <tr>
+                {% for store_name in store_names %}
+                    <th style="font-size:11px; background:#f8f9fa;">สั่ง</th>
+                    <th style="font-size:11px; background:#e8f5e9;">เคลม</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+        {% for row in table_rows %}
+            <tr>
+                <td class="label" style="text-align:center; padding:4px;">
+                    {% if row.product.image %}
+                        <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                    {% else %}
+                        <span style="color:#ccc;">-</span>
+                    {% endif %}
+                </td>
+                <td class="label">{{ row.product.barcode }}</td>
+                <td class="label">{{ row.product.description }}</td>
+                {% for cell in row.cells %}
+                    <td class="{% if cell.overridden %}overridden{% elif cell.adjusted %}below-min{% endif %}"
+                        style="text-align:right; {% if single_batch_id and can_override %}cursor:pointer;{% endif %}"
+                        {% if single_batch_id and can_override %}
+                        onclick="showOverrideModal({{ cell.product_id }}, {{ cell.store_id }}, {{ cell.qty }}, '{{ row.product.barcode }}', '{{ row.product.description|escapejs }}')"
+                        title="คลิกเพื่อแก้ไขยอด"
+                        {% endif %}>
+                        {{ cell.qty }}
+                    </td>
+                    <td style="text-align:right; background:#f1f8f4; {% if cell.claimed_qty > 0 %}color:#28a745; font-weight:bold;{% endif %}">
+                        {{ cell.claimed_qty|default:"0" }}
+                    </td>
+                {% endfor %}
+                {% if single_batch_id %}
+                    <td style="background:#fffef0;">
+                        <button onclick="showClaimModal({{ row.product.id }}, '{{ row.product.barcode }}', '{{ row.product.description|escapejs }}')"
+                                style="background:#ffc107; color:#000; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
+                            + เคลม
+                        </button>
+                    </td>
+                {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <p style="margin-top:8px; font-size: 13px; color: #666;">ยอดในตารางรวมยอดเคลมเข้าไปแล้ว (ยอดสั่ง + เคลม) ช่องสีแดง = ยอดสุทธิต่ำกว่าขั้นต่ำของสินค้านั้น ระบบปรับยอดขึ้นเป็นขั้นต่ำให้อัตโนมัติ ช่องสีน้ำเงิน = ยอดที่ admin ปรับเองแล้ว {% if not single_batch_id %}(เลือก Batch เดียวเพื่อแก้ไขยอดเอง){% endif %}</p>
+</div>
+
+<!-- Claim Modal -->
+{% if single_batch_id %}
+<!-- Override Modal -->
+<div id="overrideModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="position:relative; margin:80px auto; max-width:600px; background:#fff; padding:24px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin-top:0;">แก้ไขยอดสั่งผลิต</h3>
+
+        <div style="margin-bottom:20px; padding:12px; background:#f8f9fa; border-radius:4px;">
+            <p style="margin:4px 0;"><strong>สินค้า:</strong> <span id="overrideBarcode"></span></p>
+            <p style="margin:4px 0;"><strong>รายละเอียด:</strong> <span id="overrideDescription"></span></p>
+        </div>
+
+        <form method="post" action="{% url 'dashboard:set_override' %}" id="overrideForm">
+            {% csrf_token %}
+            <input type="hidden" name="batch" value="{{ single_batch_id }}">
+            <input type="hidden" name="product_id" id="overrideProductId">
+            <input type="hidden" name="store_id" id="overrideStoreId">
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold;">ยอดใหม่:</label>
+                <input type="number" name="override_qty" id="overrideQty" min="0" required
+                       style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"
+                       placeholder="ใส่ยอดใหม่">
+            </div>
+
+            <div style="margin-top:24px; display:flex; gap:12px; justify-content:flex-end;">
+                <button type="button" onclick="hideOverrideModal()"
+                        style="background:#6c757d; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">
+                    ยกเลิก
+                </button>
+                <button type="submit"
+                        style="background:#007bff; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">
+                    บันทึก
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="claimModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000;">
+    <div style="position:relative; margin:80px auto; max-width:600px; background:#fff; padding:24px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1);">
+        <h3 style="margin-top:0;">เพิ่มยอดเคลม</h3>
+
+        <div style="margin-bottom:20px; padding:12px; background:#f8f9fa; border-radius:4px;">
+            <p style="margin:4px 0;"><strong>สินค้า:</strong> <span id="modalBarcode"></span></p>
+            <p style="margin:4px 0;"><strong>รายละเอียด:</strong> <span id="modalDescription"></span></p>
+        </div>
+
+        <form method="post" action="{% url 'dashboard:add_claim_inline' %}" id="claimForm">
+            {% csrf_token %}
+            <input type="hidden" name="batch" value="{{ single_batch_id }}">
+            <input type="hidden" name="product_id" id="claimProductId">
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold;">เลือกสาขา:</label>
+                <select name="store_id" required style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;">
+                    <option value="">-- เลือกสาขา --</option>
+                    {% for store in store_list %}
+                        <option value="{{ store.id }}">{{ store.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="display:block; margin-bottom:8px; font-weight:bold;">จำนวนเคลม:</label>
+                <input type="number" name="claim_qty" min="1" required
+                       style="width:100%; padding:8px; border:1px solid #ddd; border-radius:4px;"
+                       placeholder="ใส่จำนวนที่ต้องการเคลม">
+            </div>
+
+            <div style="margin-top:24px; display:flex; gap:12px; justify-content:flex-end;">
+                <button type="button" onclick="hideClaimModal()"
+                        style="background:#6c757d; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">
+                    ยกเลิก
+                </button>
+                <button type="submit"
+                        style="background:#28a745; color:#fff; border:none; padding:10px 20px; border-radius:4px; cursor:pointer;">
+                    บันทึกเคลม
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showOverrideModal(productId, storeId, currentQty, barcode, description) {
+    document.getElementById('overrideProductId').value = productId;
+    document.getElementById('overrideStoreId').value = storeId;
+    document.getElementById('overrideQty').value = currentQty;
+    document.getElementById('overrideBarcode').textContent = barcode;
+    document.getElementById('overrideDescription').textContent = description;
+    document.getElementById('overrideModal').style.display = 'block';
+}
+
+function hideOverrideModal() {
+    document.getElementById('overrideModal').style.display = 'none';
+    document.getElementById('overrideForm').reset();
+}
+
+function showClaimModal(productId, barcode, description) {
+    document.getElementById('claimProductId').value = productId;
+    document.getElementById('modalBarcode').textContent = barcode;
+    document.getElementById('modalDescription').textContent = description;
+    document.getElementById('claimModal').style.display = 'block';
+}
+
+function hideClaimModal() {
+    document.getElementById('claimModal').style.display = 'none';
+    document.getElementById('claimForm').reset();
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(event) {
+    const overrideModal = document.getElementById('overrideModal');
+    const claimModal = document.getElementById('claimModal');
+    if (event.target === overrideModal) {
+        hideOverrideModal();
+    }
+    if (event.target === claimModal) {
+        hideClaimModal();
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}Product Trends - Analysis{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Product Trend Analysis</h2>
+
+        <!-- Time Range Filter -->
+        <div class="btn-group" role="group">
+            <a href="?months=3" class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 Months</a>
+            <a href="?months=6" class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
+            <a href="?months=12" class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
+        </div>
+    </div>
+
+    <div class="alert alert-info">
+        Showing data from <strong>{{ start_date|date:"M d, Y" }}</strong> to <strong>{{ end_date|date:"M d, Y" }}</strong>
+    </div>
+
+    <!-- Product List Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Products Overview ({{ product_stats|length }} products)</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>Barcode</th>
+                            <th class="text-end">Total Qty</th>
+                            <th class="text-end">Total Value</th>
+                            <th class="text-center">Order Count</th>
+                            <th class="text-end">Avg Price</th>
+                            <th>Last Order</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in product_stats %}
+                        <tr>
+                            <td>
+                                {% if stat.product.image %}
+                                <img src="{{ stat.product.image.url }}" alt="{{ stat.product.description }}"
+                                     style="width: 30px; height: 30px; object-fit: cover; margin-right: 8px;">
+                                {% endif %}
+                                {{ stat.product.description|truncatewords:8 }}
+                            </td>
+                            <td><code>{{ stat.product.barcode }}</code></td>
+                            <td class="text-end"><strong>{{ stat.total_qty|intcomma }}</strong></td>
+                            <td class="text-end">{{ stat.total_value|floatformat:2|intcomma }} ฿</td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary">{{ stat.order_count }}</span>
+                            </td>
+                            <td class="text-end">{{ stat.avg_price|floatformat:2 }} ฿</td>
+                            <td>
+                                {% if stat.last_order_date %}
+                                    {{ stat.last_order_date|date:"M d, Y" }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}"
+                                   class="btn btn-sm btn-primary">
+                                    View Trend
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-4">
+                                No products found in the selected period
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="mt-4">
+        <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-success">
+            Compare Multiple Products
+        </a>
+    </div>
+</div>
+{% endblock %}

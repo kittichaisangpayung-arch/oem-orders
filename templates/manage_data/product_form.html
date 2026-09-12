@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}ฟอร์มสินค้า{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>{% if object %}แก้ไขสินค้า{% else %}เพิ่มสินค้า{% endif %}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">บันทึก</button>
+        <a href="{% url 'manage_data:product_list' %}">ยกเลิก</a>
+    </form>
+</div>
+{% endblock %}

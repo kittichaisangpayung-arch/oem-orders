@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block title %}ตรวจสอบข้อมูล Batch #{{ batch.pk }}{% endblock %}
+{% block content %}
+<div class="card">
+    <h2>ตรวจสอบข้อมูลก่อนบันทึก - Batch #{{ batch.pk }}</h2>
+    <p><strong>ลูกค้า:</strong> {{ batch.customer }} | <strong>อัปโหลดเมื่อ:</strong> {{ batch.uploaded_at }}</p>
+
+    <div style="margin:20px 0; padding:16px; background:#fff9e6; border-left:4px solid #ffc107; border-radius:4px;">
+        <h3 style="margin-top:0; color:#856404;">⚠️ กรุณาตรวจสอบข้อมูลก่อนยืนยัน</h3>
+        <p style="margin:8px 0;">ข้อมูลด้านล่างเป็นข้อมูลที่จะถูกบันทึกลงในระบบ กรุณาตรวจสอบให้แน่ใจว่าถูกต้องครบถ้วน</p>
+    </div>
+
+    {% if has_warnings %}
+    <div style="margin-bottom:20px; padding:16px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:4px;">
+        <h3 style="margin-top:0; color:#856404;">⚠️ พบปัญหาที่ต้องตรวจสอบ</h3>
+
+        {% if failed_pos %}
+        <div style="margin-bottom:12px; padding:12px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px;">
+            <strong style="color:#721c24;">❌ Parse ไม่สำเร็จ ({{ failed_pos|length }} ไฟล์):</strong>
+            <ul style="margin:8px 0; padding-left:20px; color:#721c24;">
+            {% for po in failed_pos %}
+                <li>{{ po.source_filename }} - {{ po.error_message|default:"ไม่สามารถอ่านไฟล์ได้" }}</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if partial_pos %}
+        <div style="margin-bottom:12px; padding:12px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px;">
+            <strong style="color:#856404;">⚠️ Parse ได้บางส่วน ({{ partial_pos|length }} ไฟล์):</strong>
+            <ul style="margin:8px 0; padding-left:20px; color:#856404;">
+            {% for po in partial_pos %}
+                <li>{{ po.source_filename }} - คาดว่าจะมี {{ po.expected_row_count }} แถว แต่ได้เพียง {{ po.parsed_row_count }} แถว</li>
+            {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if unmapped_stores %}
+        <div style="margin-bottom:12px; padding:12px; background:#f8d7da; border:1px solid #f5c6cb; border-radius:4px;">
+            <strong style="color:#721c24;">❌ พบสาขาที่ไม่มีในระบบ ({{ unmapped_stores|length }} สาขา):</strong>
+            <ul style="margin:8px 0; padding-left:20px; color:#721c24;">
+            {% for store in unmapped_stores %}
+                <li><strong>{{ store.store_name }}</strong> (รหัส: {{ store.store_code }}) - PO: {{ store.order_no }}</li>
+            {% endfor %}
+            </ul>
+            <p style="margin:8px 0; color:#721c24;">⚠️ ข้อมูลของสาขาเหล่านี้จะไม่สามารถแยกตามสาขาได้</p>
+            <button onclick="window.open('/admin/core/store/add/', '_blank')" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:14px; margin-top:8px;">
+                + เพิ่มสาขาในระบบ (เปิดหน้าต่างใหม่)
+            </button>
+        </div>
+        {% endif %}
+
+        {% if missing_stores %}
+        <div style="margin-bottom:12px; padding:12px; background:#d1ecf1; border:1px solid #bee5eb; border-radius:4px;">
+            <strong style="color:#0c5460;">ℹ️ สาขาที่ไม่มีในชุด PO นี้ ({{ missing_stores|length }} สาขา):</strong>
+            <ul style="margin:8px 0; padding-left:20px; color:#0c5460;">
+            {% for store in missing_stores %}
+                <li>{{ store.name }} (รหัส: {{ store.store_code }})</li>
+            {% endfor %}
+            </ul>
+            <p style="margin:8px 0; color:#0c5460;">สาขาเหล่านี้จะไม่มีข้อมูลในรอบนี้</p>
+        </div>
+        {% endif %}
+
+        {% if unmapped_barcodes %}
+        <div style="margin-bottom:12px; padding:12px; background:#fff3cd; border:1px solid #ffc107; border-radius:4px;">
+            <strong style="color:#856404;">⚠️ พบสินค้าที่ยังไม่มีในระบบ ({{ unmapped_barcodes|length }} รายการ):</strong>
+            <div style="margin:8px 0; color:#856404;">
+                <strong>Barcode:</strong> {{ unmapped_barcodes|join:", " }}
+            </div>
+            <p style="margin:8px 0; color:#856404;">⚠️ สินค้าเหล่านี้จะไม่ถูกรวมในยอดผลิต</p>
+            <button onclick="window.open('/admin/core/product/add/', '_blank')" style="background:#ffc107; color:#000; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:14px; margin-top:8px;">
+                + เพิ่มสินค้าในระบบ (เปิดหน้าต่างใหม่)
+            </button>
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <div style="margin-bottom:20px; padding:16px; background:#d4edda; border-left:4px solid #28a745; border-radius:4px;">
+        <strong style="color:#155724;">✅ ไม่พบปัญหา - ข้อมูลพร้อมบันทึก</strong>
+    </div>
+    {% endif %}
+
+    <h3>รายละเอียด PO ที่จะบันทึก</h3>
+    <table>
+        <thead>
+            <tr>
+                <th class="label">ไฟล์</th>
+                <th class="label">Order No.</th>
+                <th class="label">สาขา</th>
+                <th>สถานะ</th>
+                <th>แถวที่คาดว่าจะมี</th>
+                <th>แถวที่ parse ได้</th>
+                <th class="label">Parser</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for po in purchase_orders %}
+            <tr>
+                <td class="label">{{ po.source_filename }}</td>
+                <td class="label">{{ po.order_no }}</td>
+                <td class="label">
+                    {% if po.store %}{{ po.store.name }}{% else %}<em style="color:#c0392b;">{{ po.store_name_raw }} (ไม่พบใน mapping)</em>{% endif %}
+                </td>
+                <td class="status-{{ po.parse_status }}">{{ po.get_parse_status_display }}</td>
+                <td>{{ po.expected_row_count }}</td>
+                <td>{{ po.parsed_row_count }}</td>
+                <td class="label">{{ po.parser_used }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div style="margin-top:24px; padding:20px; background:#f8f9fa; border-radius:8px; display:flex; gap:16px; justify-content:space-between; align-items:center;">
+        <div>
+            <p style="margin:0; font-size:16px;"><strong>ยืนยันการบันทึกข้อมูลลงระบบ?</strong></p>
+            <p style="margin:4px 0 0 0; font-size:14px; color:#666;">
+                {% if has_warnings %}
+                    คุณสามารถบันทึกได้แม้มีปัญหา แต่ข้อมูลบางส่วนอาจไม่สมบูรณ์
+                {% else %}
+                    ข้อมูลทั้งหมดพร้อมบันทึก
+                {% endif %}
+            </p>
+        </div>
+        <div style="display:flex; gap:12px;">
+            <form method="post" action="{% url 'ingestion:cancel_batch' batch.pk %}" onsubmit="return confirm('ยืนยันยกเลิก? ข้อมูลทั้งหมดจะถูกลบทิ้ง');" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" style="background:#6c757d; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-size:16px;">
+                    ❌ ยกเลิก
+                </button>
+            </form>
+            <form method="post" action="{% url 'ingestion:confirm_batch' batch.pk %}" style="margin:0;">
+                {% csrf_token %}
+                <button type="submit" style="background:#28a745; color:#fff; border:none; padding:12px 24px; border-radius:4px; cursor:pointer; font-size:16px; font-weight:bold;">
+                    ✅ ยืนยันบันทึกข้อมูล
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto alert if there are critical warnings
+{% if unmapped_stores or failed_pos %}
+window.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        let message = '⚠️ พบปัญหาในการประมวลผล PO:\n\n';
+        {% if failed_pos %}
+        message += '❌ Parse ไม่สำเร็จ: {{ failed_pos|length }} ไฟล์\n';
+        {% endif %}
+        {% if unmapped_stores %}
+        message += '❌ สาขาที่ไม่มีในระบบ: {{ unmapped_stores|length }} สาขา\n';
+        {% endif %}
+        {% if unmapped_barcodes %}
+        message += '⚠️ สินค้าที่ไม่มีในระบบ: {{ unmapped_barcodes|length }} รายการ\n';
+        {% endif %}
+        {% if missing_stores %}
+        message += 'ℹ️ สาขาที่ไม่มีในชุด PO: {{ missing_stores|length }} สาขา\n';
+        {% endif %}
+        message += '\nกรุณาตรวจสอบข้อมูลก่อนยืนยัน';
+        alert(message);
+    }, 500);
+});
+{% endif %}
+</script>
+{% endblock %}
