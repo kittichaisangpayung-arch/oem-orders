@@ -20,10 +20,14 @@ class GoogleDriveStorage(Storage):
     def _get_drive(self):
         """Initialize and return GoogleDrive instance"""
         if self._drive is None:
+            from django.conf import settings
             gauth = GoogleAuth()
 
+            # Use absolute path for credentials
+            credentials_path = os.path.join(settings.BASE_DIR, 'credentials.json')
+
             # Load credentials
-            gauth.LoadCredentialsFile("credentials.json")
+            gauth.LoadCredentialsFile(credentials_path)
 
             if gauth.credentials is None:
                 raise Exception("No credentials found")
@@ -32,7 +36,7 @@ class GoogleDriveStorage(Storage):
             else:
                 gauth.Authorize()
 
-            gauth.SaveCredentialsFile("credentials.json")
+            gauth.SaveCredentialsFile(credentials_path)
             self._drive = GoogleDrive(gauth)
 
         return self._drive
