@@ -130,8 +130,33 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles_build' / 'static'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-MEDIA_URL = 'media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+# Google Cloud Storage Configuration
+GCS_BUCKET_NAME = os.environ.get('GCS_BUCKET_NAME', '')
+GCS_CREDENTIALS_JSON = os.environ.get('GCS_CREDENTIALS_JSON', '')
+
+# Use GCS if credentials are configured, otherwise use local storage
+USE_GCS = bool(GCS_BUCKET_NAME and GCS_CREDENTIALS_JSON)
+
+if USE_GCS:
+    # Add storages to installed apps
+    if 'storages' not in INSTALLED_APPS:
+        INSTALLED_APPS.append('storages')
+
+    # GCS settings
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    GS_BUCKET_NAME = GCS_BUCKET_NAME
+    GS_PROJECT_ID = os.environ.get('GCS_PROJECT_ID', '')
+    GS_CREDENTIALS = None  # Will use GCS_CREDENTIALS_JSON env var
+    GS_AUTO_CREATE_BUCKET = False
+    GS_DEFAULT_ACL = 'publicRead'
+    GS_FILE_OVERWRITE = False
+    GS_MAX_MEMORY_SIZE = 10485760  # 10MB
+
+    MEDIA_URL = f'https://storage.googleapis.com/{GCS_BUCKET_NAME}/'
+else:
+    # Local storage (default for development and when GCS is not configured)
+    MEDIA_URL = 'media/'
+    MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

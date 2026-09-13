@@ -13,3 +13,5 @@ python-barcode==0.16.1
 bahttext==1.0.2
 arabic-reshaper==3.0.0
 python-bidi==0.6.10
+django-storages[google]==1.14.2
+google-cloud-storage==2.14.0
