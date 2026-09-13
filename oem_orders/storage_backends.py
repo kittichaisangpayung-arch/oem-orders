@@ -5,10 +5,8 @@ import os
 import io
 from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.decoding import force_str
 from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
-import tempfile
 import json
 
 
