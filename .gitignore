@@ -54,3 +54,8 @@ htmlcov/
 
 # PDF files (large files)
 *.pdf
+
+# Google Drive credentials
+client_secrets.json
+credentials.json
+gdrive_mapping.json
