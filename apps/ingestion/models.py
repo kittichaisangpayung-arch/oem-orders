@@ -26,7 +26,37 @@ class PurchaseOrderBatch(models.Model):
 
 
 def po_pdf_upload_path(instance, filename):
-    return f"po_pdfs/{instance.batch_id}/{filename}"
+    """
+    Generate upload path with structure: YYYY/Month/Week_X/batch_id/filename
+    Example: 2569/กันยายน/สัปดาห์ที่ 2/1/file.pdf
+    """
+    from datetime import datetime
+    import calendar
+
+    # Get upload date (use batch uploaded_at if available)
+    if hasattr(instance, 'batch') and instance.batch:
+        upload_date = instance.batch.uploaded_at
+    else:
+        upload_date = datetime.now()
+
+    # Thai year (Buddhist Era)
+    thai_year = upload_date.year + 543
+
+    # Thai month names
+    thai_months = {
+        1: 'มกราคม', 2: 'กุมภาพันธ์', 3: 'มีนาคม', 4: 'เมษายน',
+        5: 'พฤษภาคม', 6: 'มิถุนายน', 7: 'กรกฎาคม', 8: 'สิงหาคม',
+        9: 'กันยายน', 10: 'ตุลาคม', 11: 'พฤศจิกายน', 12: 'ธันวาคม'
+    }
+    thai_month = thai_months[upload_date.month]
+
+    # Calculate week number in month (1-5)
+    day = upload_date.day
+    week_in_month = ((day - 1) // 7) + 1
+    week_folder = f"สัปดาห์ที่ {week_in_month}"
+
+    # Build path: YYYY/Month/Week/batch_id/filename
+    return f"po_pdfs/{thai_year}/{thai_month}/{week_folder}/{instance.batch_id}/{filename}"
 
 
 class PurchaseOrder(models.Model):
