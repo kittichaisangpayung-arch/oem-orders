@@ -262,7 +262,8 @@ def production_summary(request):
             if (pid, sid) in overrides:
                 adjusted_total += overrides[(pid, sid)]
                 has_override = True
-            elif net_qty > 0 and minimum > 0 and net_qty < minimum:
+            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+                # Only apply minimum if store actually ordered (qty > 0)
                 adjusted_total += minimum
                 has_adjustment = True
             else:
@@ -401,7 +402,8 @@ def store_matrix(request):
             if overridden:
                 display_qty = overrides[(pid, sid)]
                 adjusted = False
-            elif net_qty > 0 and minimum > 0 and net_qty < minimum:
+            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+                # Only apply minimum if store actually ordered (qty > 0)
                 display_qty = minimum
                 adjusted = True
             else:
@@ -624,6 +626,7 @@ def factory_summary(request):
             if (pid, sid) in overrides:
                 adjusted_total_before_claim += overrides[(pid, sid)]
             elif qty > 0 and minimum > 0 and qty < minimum:
+                # Only apply minimum if store actually ordered (qty > 0)
                 # Adjust based on original qty only, not including claims yet
                 adjusted_total_before_claim += minimum
             else:
@@ -763,21 +766,32 @@ def shipping_summary(request):
             net_qty = qty + claimed
             minimum = p["min_order_qty"]
 
+            # Calculate display_qty for ORDER column (not including claims in display)
             overridden = (pid, sid) in overrides
             if overridden:
                 display_qty = overrides[(pid, sid)]
-            elif net_qty > 0 and minimum > 0 and net_qty < minimum:
+            elif qty > 0 and minimum > 0 and qty < minimum:
+                # Apply minimum only to actual order qty if store ordered
                 display_qty = minimum
             else:
-                display_qty = net_qty
+                # If qty=0 (not ordered), show 0 even if there are claims
+                display_qty = qty
+
+            # Calculate net for production total (order + claims, with minimum applied)
+            if overridden:
+                net_for_total = overrides[(pid, sid)] + claimed
+            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+                net_for_total = minimum
+            else:
+                net_for_total = net_qty
 
             cells.append({
-                'qty': display_qty,
+                'qty': display_qty,  # Order qty only, with minimum if ordered
                 'claimed': claimed,
             })
-            row_total += display_qty
+            row_total += net_for_total
             row_claim_total += claimed
-            store_totals[sid] += display_qty
+            store_totals[sid] += net_for_total
             store_claim_totals[sid] += claimed
 
         # Add row even if row_total is 0 to show all products
@@ -954,7 +968,8 @@ def create_delivery_notes_from_batch(request, batch_id):
             overridden = (pid, store_id) in overrides
             if overridden:
                 display_qty = overrides[(pid, store_id)]
-            elif net_qty > 0 and minimum > 0 and net_qty < minimum:
+            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+                # Only apply minimum if store actually ordered (qty > 0)
                 display_qty = minimum
             else:
                 display_qty = net_qty
