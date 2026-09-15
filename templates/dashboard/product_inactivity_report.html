@@ -119,7 +119,7 @@
                         {% for item in store_data.inactive_products %}
                         <tr class="{{ item.css_class }}">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                <div class="text-sm font-medium text-gray-900">{{ item.product.description }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-600 font-mono">{{ item.product.barcode }}</div>

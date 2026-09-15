@@ -90,7 +90,7 @@ def product_inactivity_report(request):
 
     # Get all active stores and products
     stores = Store.objects.filter(is_active=True).order_by('name')
-    products = Product.objects.filter(is_active=True).order_by('name')
+    products = Product.objects.filter(is_active=True).order_by('description')
 
     # Build report data
     report_data = []
