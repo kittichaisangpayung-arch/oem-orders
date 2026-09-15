@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.db.models import Max, Q
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
 
 from apps.core.models import Product, Store
 from apps.ingestion.models import POLineItem, PurchaseOrder
@@ -17,7 +18,7 @@ def get_last_order_dates(store, products, lookback_months=12):
     Returns:
         dict: {product_id: last_order_date or None}
     """
-    lookback_date = datetime.now() - timedelta(days=lookback_months * 30)
+    lookback_date = timezone.now() - timedelta(days=lookback_months * 30)
 
     # Get all line items for this store within lookback period
     line_items = POLineItem.objects.filter(
@@ -44,7 +45,12 @@ def calculate_weeks_inactive(last_order_date):
     if not last_order_date:
         return None  # Never ordered
 
-    delta = datetime.now() - last_order_date.replace(tzinfo=None)
+    now = timezone.now()
+    # Ensure both dates are timezone-aware
+    if timezone.is_naive(last_order_date):
+        last_order_date = timezone.make_aware(last_order_date)
+
+    delta = now - last_order_date
     weeks = delta.days // 7
     return weeks
 
