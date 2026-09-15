@@ -681,48 +681,59 @@ def shipping_summary(request):
         "purchase_order__store__id", "purchase_order__store__name",
     ).annotate(total_qty2=Sum("qty2"), total_line_amount=Sum("line_total"))
 
+    # Get filter parameters
+    batch_id = request.GET.get("batch")
+    customer_id = request.GET.get("customer")
+
+    # Initialize stores and products dictionaries
     stores = {}
     products = {}
     matrix = defaultdict(dict)
 
+    # Load all active products
+    all_products = Product.objects.filter(is_active=True)
+    for product in all_products:
+        products[product.id] = {
+            "id": product.id,
+            "barcode": product.barcode or "(unmapped)",
+            "description": product.description or "",
+            "sort_rank": product.sort_rank,
+            "min_order_qty": product.min_order_qty or 0,
+            "image": product.image.name if product.image else None,
+        }
+
+    # Load all active stores based on filters
+    if customer_id:
+        # Show only stores for selected customer
+        all_stores = Store.objects.filter(is_active=True, customer_id=customer_id)
+    elif batch_id:
+        # Show stores that have POs in this batch
+        batch_store_ids = PurchaseOrder.objects.filter(batch_id=batch_id).values_list('store_id', flat=True).distinct()
+        all_stores = Store.objects.filter(is_active=True, id__in=batch_store_ids)
+    else:
+        # Show all active stores
+        all_stores = Store.objects.filter(is_active=True)
+
+    for store in all_stores:
+        stores[store.id] = store.name
+
+    # Fill matrix with ordered quantities
     for row in rows:
         store_id = row["purchase_order__store__id"]
-        store_name = row["purchase_order__store__name"] or "(Unmapped store)"
         product_id = row["product__id"]
 
-        if store_id not in stores:
-            stores[store_id] = store_name
-
-        if product_id not in products:
-            products[product_id] = {
-                "id": product_id,
-                "barcode": row["product__barcode"] or "(unmapped)",
-                "description": row["product__description"] or "",
-                "sort_rank": row["product__sort_rank"],
-                "min_order_qty": row["product__min_order_qty"] or 0,
-                "image": row["product__image"],
-            }
-
-        qty = row["total_qty2"]
-        matrix[product_id][store_id] = qty
+        if product_id and store_id:
+            qty = row["total_qty2"]
+            matrix[product_id][store_id] = qty
 
     _, claimed_by_product_store = _claimed_totals(request)
 
+    # Add stores from claims that might not be in the initial store list
     for pid, sid in claimed_by_product_store:
         if sid is not None and sid not in stores:
             store = Store.objects.filter(pk=sid).first()
-            stores[sid] = store.name if store else "(Unmapped store)"
-        if pid is not None and pid not in products:
-            product = Product.objects.filter(pk=pid).first()
-            if product:
-                products[pid] = {
-                    "id": pid,
-                    "barcode": product.barcode,
-                    "description": product.description,
-                    "sort_rank": product.sort_rank,
-                    "min_order_qty": product.min_order_qty or 0,
-                    "image": product.image.url if product.image else None,
-                }
+            if store and store.is_active:
+                stores[sid] = store.name
 
     sorted_store_ids = sorted(stores, key=lambda sid: stores[sid])
     sorted_product_ids = sorted(
@@ -735,7 +746,7 @@ def shipping_summary(request):
         for o in StoreProductOverride.objects.filter(purchase_order_batch_id=single_batch_id):
             overrides[(o.product_id, o.store_id)] = o.override_qty
 
-    # Build shipping table with adjusted quantities
+    # Build shipping table with adjusted quantities - now shows ALL products and ALL stores
     table_rows = []
     store_totals = defaultdict(int)
     store_claim_totals = defaultdict(int)
@@ -747,7 +758,7 @@ def shipping_summary(request):
         row_claim_total = 0
 
         for sid in sorted_store_ids:
-            qty = matrix[pid].get(sid, 0)
+            qty = matrix[pid].get(sid, 0)  # Will be 0 if not ordered
             claimed = claimed_by_product_store.get((pid, sid), 0)
             net_qty = qty + claimed
             minimum = p["min_order_qty"]
@@ -769,6 +780,7 @@ def shipping_summary(request):
             store_totals[sid] += display_qty
             store_claim_totals[sid] += claimed
 
+        # Add row even if row_total is 0 to show all products
         table_rows.append({
             "product": p,
             "cells": cells,
@@ -780,11 +792,20 @@ def shipping_summary(request):
     grand_total = sum(store_totals.values())
     grand_claim_total = sum(store_claim_totals.values())
 
+    # Prepare store columns with totals for easier template iteration
+    store_columns = [
+        {
+            "name": stores[sid],
+            "total": store_totals[sid],
+            "claim_total": store_claim_totals[sid],
+        }
+        for sid in sorted_store_ids
+    ]
+
     context = {
         "store_names": [stores[sid] for sid in sorted_store_ids],
+        "store_columns": store_columns,
         "table_rows": table_rows,
-        "store_totals": [store_totals[sid] for sid in sorted_store_ids],
-        "store_claim_totals": [store_claim_totals[sid] for sid in sorted_store_ids],
         "grand_total": grand_total,
         "grand_claim_total": grand_claim_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
