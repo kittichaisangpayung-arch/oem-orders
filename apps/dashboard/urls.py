@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 from . import product_trends
+from . import product_inactivity
 
 app_name = "dashboard"
 
@@ -28,4 +29,7 @@ urlpatterns = [
     path("trends/", product_trends.product_trend_list, name="product_trend_list"),
     path("trends/<int:product_id>/", product_trends.product_trend_detail, name="product_trend_detail"),
     path("trends/compare/", product_trends.product_comparison, name="product_comparison"),
+
+    # Product Inactivity Report
+    path("inactivity/", product_inactivity.product_inactivity_report, name="product_inactivity_report"),
 ]

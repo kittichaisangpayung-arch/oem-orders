@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}รายงานสินค้าที่ไม่ได้สั่งนาน{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">รายงานสินค้าที่ไม่ได้สั่งนาน</h1>
+        <p class="text-gray-600">ติดตามสินค้าที่แต่ละสาขาไม่ได้สั่งติดต่อกันเป็นเวลานาน</p>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div>
+                <label for="min_weeks" class="block text-sm font-medium text-gray-700 mb-1">
+                    แสดงสินค้าที่ไม่สั่งเกิน
+                </label>
+                <select name="min_weeks" id="min_weeks" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="2" {% if min_weeks == 2 %}selected{% endif %}>2 สัปดาห์</option>
+                    <option value="4" {% if min_weeks == 4 %}selected{% endif %}>4 สัปดาห์</option>
+                    <option value="8" {% if min_weeks == 8 %}selected{% endif %}>8 สัปดาห์</option>
+                    <option value="12" {% if min_weeks == 12 %}selected{% endif %}>12 สัปดาห์</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="lookback_months" class="block text-sm font-medium text-gray-700 mb-1">
+                    ดูย้อนหลัง
+                </label>
+                <select name="lookback_months" id="lookback_months" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="3" {% if lookback_months == 3 %}selected{% endif %}>3 เดือน</option>
+                    <option value="6" {% if lookback_months == 6 %}selected{% endif %}>6 เดือน</option>
+                    <option value="12" {% if lookback_months == 12 %}selected{% endif %}>12 เดือน</option>
+                </select>
+            </div>
+
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors">
+                ดูรายงาน
+            </button>
+        </form>
+    </div>
+
+    <!-- Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="text-sm text-gray-600 mb-1">จำนวนสาขาที่มีสินค้าไม่ได้สั่ง</div>
+            <div class="text-2xl font-bold text-gray-900">{{ total_stores }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="text-sm text-gray-600 mb-1">สินค้าทั้งหมดในระบบ</div>
+            <div class="text-2xl font-bold text-gray-900">{{ total_products }}</div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+            <div class="text-sm text-gray-600 mb-1">เกณฑ์การแจ้งเตือน</div>
+            <div class="text-2xl font-bold text-gray-900">≥ {{ min_weeks }} สัปดาห์</div>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+        <div class="text-sm font-medium text-gray-700 mb-3">สถานะการเตือน:</div>
+        <div class="flex flex-wrap gap-4">
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-yellow-50 border border-yellow-200 rounded"></div>
+                <span class="text-sm text-gray-600">เตือน (2-4 สัปดาห์)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-orange-50 border border-orange-200 rounded"></div>
+                <span class="text-sm text-gray-600">ระวัง (4-8 สัปดาห์)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-red-50 border border-red-200 rounded"></div>
+                <span class="text-sm text-gray-600">วิกฤต (&gt;8 สัปดาห์)</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
+                <span class="text-sm text-gray-600">ไม่เคยสั่ง</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Data -->
+    {% if report_data %}
+        {% for store_data in report_data %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
+            <!-- Store Header -->
+            <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-gray-900">{{ store_data.store.name }}</h2>
+                    <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                        {{ store_data.total_inactive }} สินค้าไม่ได้สั่ง
+                    </span>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                สินค้า
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                รหัสสินค้า
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                สั่งครั้งล่าสุด
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                ไม่สั่งมาแล้ว
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in store_data.inactive_products %}
+                        <tr class="{{ item.css_class }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-600 font-mono">{{ item.product.barcode }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if item.last_ordered %}
+                                    <div class="text-sm text-gray-900">{{ item.last_ordered|date:"d/m/Y" }}</div>
+                                    <div class="text-xs text-gray-500">{{ item.last_ordered|date:"H:i" }} น.</div>
+                                {% else %}
+                                    <div class="text-sm text-gray-400 italic">ไม่เคยสั่ง</div>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                {% if item.weeks_inactive is None %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                        ไม่เคยสั่ง
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                        {% if item.alert_level == 'warning' %}bg-yellow-100 text-yellow-800
+                                        {% elif item.alert_level == 'alert' %}bg-orange-100 text-orange-800
+                                        {% elif item.alert_level == 'critical' %}bg-red-100 text-red-800
+                                        {% endif %}">
+                                        {{ item.weeks_inactive }} สัปดาห์
+                                    </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">ไม่พบสินค้าที่ไม่ได้สั่งนาน</h3>
+            <p class="text-gray-500">ทุกสาขาสั่งสินค้าอย่างสม่ำเสมอในช่วงเวลาที่กำหนด</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
