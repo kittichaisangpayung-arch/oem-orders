@@ -43,32 +43,39 @@ class GoogleDriveStorage(Storage):
 
     def _save(self, name, content):
         """Save a file to Google Drive"""
-        drive = self._get_drive()
-        folder_id = os.environ.get('GDRIVE_FOLDER_ID', 'root')
+        try:
+            drive = self._get_drive()
+            folder_id = os.environ.get('GDRIVE_FOLDER_ID', 'root')
 
-        # Create folder structure if needed
-        folder_path = os.path.dirname(name)
-        if folder_path:
-            folder_id = self._create_folder_structure(folder_path, folder_id)
+            # Create folder structure if needed
+            folder_path = os.path.dirname(name)
+            if folder_path:
+                folder_id = self._create_folder_structure(folder_path, folder_id)
 
-        # Create file
-        gdrive_file = drive.CreateFile({
-            'title': os.path.basename(name),
-            'parents': [{'id': folder_id}]
-        })
+            # Create file
+            gdrive_file = drive.CreateFile({
+                'title': os.path.basename(name),
+                'parents': [{'id': folder_id}]
+            })
 
-        # Set content
-        if hasattr(content, 'read'):
-            gdrive_file.content = io.BytesIO(content.read())
-        else:
-            gdrive_file.SetContentString(content)
+            # Set content
+            if hasattr(content, 'read'):
+                gdrive_file.content = io.BytesIO(content.read())
+            else:
+                gdrive_file.SetContentString(content)
 
-        gdrive_file.Upload()
+            gdrive_file.Upload()
 
-        # Store file mapping
-        self._save_file_mapping(name, gdrive_file['id'])
+            # Store file mapping
+            self._save_file_mapping(name, gdrive_file['id'])
 
-        return name
+            return name
+        except Exception as e:
+            # Log error and raise with more context
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to save file to Google Drive: {name}, Error: {str(e)}")
+            raise Exception(f"Google Drive upload failed: {str(e)}")
 
     def _create_folder_structure(self, path, parent_id='root'):
         """Create nested folders in Google Drive"""

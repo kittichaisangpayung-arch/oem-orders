@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
+from adminsortable2.admin import SortableAdminMixin
 
 from .models import CompanyProfile, Customer, CustomerProduct, Factory, Product, Store
 
@@ -18,6 +19,19 @@ class CompanyProfileAdmin(admin.ModelAdmin):
             "fields": ("is_active",)
         }),
     )
+
+    def save_model(self, request, obj, form, change):
+        """Override save to handle file upload errors gracefully"""
+        try:
+            super().save_model(request, obj, form, change)
+            self.message_user(request, "บันทึกข้อมูลบริษัทเรียบร้อยแล้ว", level='success')
+        except Exception as e:
+            from django.contrib import messages
+            error_msg = f"ไม่สามารถบันทึกข้อมูลได้: {str(e)}"
+            if "Google Drive" in str(e):
+                error_msg += " (ปัญหาการเชื่อมต่อ Google Drive - กรุณาติดต่อผู้ดูแลระบบ)"
+            self.message_user(request, error_msg, level='error')
+            raise
 
 
 class StoreInline(admin.TabularInline):
@@ -47,7 +61,7 @@ class StoreAdmin(admin.ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(SortableAdminMixin, admin.ModelAdmin):
     list_display = ["image_thumbnail", "barcode", "description", "product_group", "factory", "uom", "min_order_qty", "sort_rank", "is_active"]
     search_fields = ["barcode", "description", "product_group"]
     list_filter = ["product_group", "factory", "is_active"]

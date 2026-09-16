@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'adminsortable2',
     'apps.core',
     'apps.parsers',
     'apps.ingestion',
@@ -143,7 +144,7 @@ if USE_GDRIVE:
     MEDIA_URL = 'https://drive.google.com/uc?export=view&id='
 else:
     # Local storage (default for development and when Google Drive is not configured)
-    MEDIA_URL = 'media/'
+    MEDIA_URL = '/media/'
     MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

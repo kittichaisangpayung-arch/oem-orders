@@ -17,5 +17,6 @@ urlpatterns = [
     path('manage/', include('apps.manage_data.urls')),
 ]
 
-if settings.DEBUG:
+# Serve media files (for local storage only, not Google Drive)
+if not settings.USE_GDRIVE and hasattr(settings, 'MEDIA_ROOT'):
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
