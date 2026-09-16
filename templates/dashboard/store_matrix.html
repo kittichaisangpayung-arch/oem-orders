@@ -47,6 +47,12 @@
                 <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
         </select>
+        <select name="store">
+            <option value="">-- ทุกสาขา --</option>
+            {% for s in stores %}
+                <option value="{{ s.pk }}" {% if request.GET.store == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
         <input type="date" name="date_from" value="{{ request.GET.date_from }}">
         <input type="date" name="date_to" value="{{ request.GET.date_to }}">
         <button type="submit">กรอง</button>

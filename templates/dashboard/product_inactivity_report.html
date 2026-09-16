@@ -37,6 +37,18 @@
                 </select>
             </div>
 
+            <div>
+                <label for="store" class="block text-sm font-medium text-gray-700 mb-1">
+                    สาขา
+                </label>
+                <select name="store" id="store" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- ทุกสาขา --</option>
+                    {% for s in stores %}
+                        <option value="{{ s.pk }}" {% if request.GET.store == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors">
                 ดูรายงาน
             </button>

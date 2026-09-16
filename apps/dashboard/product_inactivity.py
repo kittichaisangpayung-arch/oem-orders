@@ -87,9 +87,14 @@ def product_inactivity_report(request):
     # Get filter parameters
     min_weeks = int(request.GET.get('min_weeks', 2))  # Minimum weeks to show
     lookback_months = int(request.GET.get('lookback_months', 12))  # How far back to check
+    store_filter = request.GET.get('store')
 
     # Get all active stores and products
-    stores = Store.objects.filter(is_active=True).order_by('name')
+    stores = Store.objects.filter(is_active=True)
+    if store_filter:
+        stores = stores.filter(id=store_filter)
+    stores = stores.order_by('name')
+
     products = Product.objects.filter(is_active=True).order_by('description')
 
     # Build report data
@@ -133,6 +138,7 @@ def product_inactivity_report(request):
         'lookback_months': lookback_months,
         'total_stores': len(report_data),
         'total_products': products.count(),
+        'stores': Store.objects.filter(is_active=True),
     }
 
     return render(request, 'dashboard/product_inactivity_report.html', context)

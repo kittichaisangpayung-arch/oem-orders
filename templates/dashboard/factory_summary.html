@@ -18,6 +18,12 @@
                 <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
             {% endfor %}
         </select>
+        <select name="store">
+            <option value="">-- ทุกสาขา --</option>
+            {% for s in stores %}
+                <option value="{{ s.pk }}" {% if request.GET.store == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
         <select name="group">
             <option value="">-- ทุกกลุ่มสินค้า --</option>
             {% for g in all_groups %}

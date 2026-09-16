@@ -134,6 +134,7 @@ def _filter_line_items(request):
 
     batch_id = request.GET.get("batch")
     customer_id = request.GET.get("customer")
+    store_id = request.GET.get("store")
     date_from = request.GET.get("date_from")
     date_to = request.GET.get("date_to")
 
@@ -141,6 +142,8 @@ def _filter_line_items(request):
         qs = qs.filter(purchase_order__batch_id=batch_id)
     if customer_id:
         qs = qs.filter(purchase_order__customer_id=customer_id)
+    if store_id:
+        qs = qs.filter(purchase_order__store_id=store_id)
     if date_from:
         qs = qs.filter(purchase_order__batch__uploaded_at__date__gte=date_from)
     if date_to:
@@ -154,6 +157,7 @@ def _filter_claims(request):
 
     batch_id = request.GET.get("batch")
     customer_id = request.GET.get("customer")
+    store_id = request.GET.get("store")
     date_from = request.GET.get("date_from")
     date_to = request.GET.get("date_to")
 
@@ -161,6 +165,8 @@ def _filter_claims(request):
         qs = qs.filter(purchase_order__batch_id=batch_id)
     if customer_id:
         qs = qs.filter(purchase_order__customer_id=customer_id)
+    if store_id:
+        qs = qs.filter(purchase_order__store_id=store_id)
     if date_from:
         qs = qs.filter(purchase_order__batch__uploaded_at__date__gte=date_from)
     if date_to:
@@ -292,6 +298,7 @@ def production_summary(request):
         "unmapped_total": unmapped_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
+        "stores": Store.objects.filter(is_active=True),
     }
     return render(request, "dashboard/production.html", context)
 
@@ -460,6 +467,7 @@ def store_matrix(request):
         "grand_adjusted_amount": grand_adjusted_amount,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
+        "stores": Store.objects.filter(is_active=True),
         "single_batch_id": single_batch_id,
         "can_override": bool(single_batch_id) and staff_required(request.user),
     }
@@ -668,6 +676,7 @@ def factory_summary(request):
         "unmapped_total": unmapped_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
+        "stores": Store.objects.filter(is_active=True),
         "all_groups": all_groups,
     }
     return render(request, "dashboard/factory_summary.html", context)
@@ -824,6 +833,7 @@ def shipping_summary(request):
         "grand_claim_total": grand_claim_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
+        "stores": Store.objects.filter(is_active=True),
         "single_batch_id": single_batch_id,
     }
     return render(request, "dashboard/shipping_summary.html", context)
