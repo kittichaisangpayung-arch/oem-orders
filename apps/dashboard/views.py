@@ -953,26 +953,25 @@ def create_delivery_notes_from_batch(request, batch_id):
             except ValueError:
                 pass
 
-        # Calculate quantities for this store
+        # Calculate quantities for this store (excluding claims from delivery note)
         store_items = []
         subtotal = Decimal('0')
 
         for pid in sorted_product_ids:
             p = products[pid]
             qty = matrix[pid].get(store_id, 0)
-            claimed = claimed_by_product_store.get((pid, store_id), 0)
-            net_qty = qty + claimed
             minimum = p["min_order_qty"]
             unit_price = price_matrix[pid].get(store_id, Decimal('0'))
 
+            # Delivery note should NOT include claims - only actual orders
             overridden = (pid, store_id) in overrides
             if overridden:
                 display_qty = overrides[(pid, store_id)]
-            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+            elif qty > 0 and minimum > 0 and qty < minimum:
                 # Only apply minimum if store actually ordered (qty > 0)
                 display_qty = minimum
             else:
-                display_qty = net_qty
+                display_qty = qty
 
             if display_qty > 0:
                 amount = Decimal(str(display_qty)) * unit_price
@@ -981,7 +980,6 @@ def create_delivery_notes_from_batch(request, batch_id):
                 store_items.append({
                     "product_id": pid,
                     "quantity": display_qty,
-                    "claimed_quantity": claimed,
                     "unit_price": unit_price,
                     "amount": amount,
                 })
@@ -1022,13 +1020,13 @@ def create_delivery_notes_from_batch(request, batch_id):
                 created_by=request.user,
             )
 
-            # Create line items
+            # Create line items (no claimed_quantity field needed)
             for idx, item in enumerate(store_items, start=1):
                 DeliveryNoteItem.objects.create(
                     delivery_note=dn,
                     product_id=item["product_id"],
                     quantity=item["quantity"],
-                    claimed_quantity=item["claimed_quantity"],
+                    claimed_quantity=0,  # Delivery notes don't include claims
                     unit_price=item["unit_price"],
                     amount=item["amount"],
                     line_no=idx,
