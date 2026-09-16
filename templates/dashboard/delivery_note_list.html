@@ -12,6 +12,39 @@
                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
             </div>
             <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">Batch</label>
+                <select name="batch" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    {% for batch in batches %}
+                        <option value="{{ batch.pk }}" {% if batch_filter == batch.pk|stringformat:"s" %}selected{% endif %}>
+                            Batch #{{ batch.pk }} ({{ batch.uploaded_at|date:"d/m/Y" }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">ลูกค้า</label>
+                <select name="customer" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    {% for customer in customers %}
+                        <option value="{{ customer.pk }}" {% if customer_filter == customer.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ customer.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width: 150px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 14px;">สาขา</label>
+                <select name="store" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">ทั้งหมด</option>
+                    {% for store in stores %}
+                        <option value="{{ store.pk }}" {% if store_filter == store.pk|stringformat:"s" %}selected{% endif %}>
+                            {{ store.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="min-width: 150px;">
                 <label style="display: block; margin-bottom: 5px; font-size: 14px;">สถานะ</label>
                 <select name="status" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                     <option value="">ทั้งหมด</option>
@@ -32,11 +65,12 @@
             <tr>
                 <th class="label">DN Number</th>
                 <th class="label">Store</th>
+                <th class="label">Customer</th>
                 <th class="label">Batch</th>
                 <th>Status</th>
-                <th>Created By</th>
-                <th>Created At</th>
-                <th>Actions</th>
+                <th>Grand Total</th>
+                <th>Created</th>
+                <th style="width: 200px;">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -44,6 +78,7 @@
             <tr>
                 <td class="label"><strong>{{ dn.dn_number }}</strong></td>
                 <td class="label">{{ dn.store.name }}</td>
+                <td class="label">{{ dn.store.customer.name }}</td>
                 <td class="label">
                     {% if dn.batch %}
                         <a href="{% url 'dashboard:shipping_summary' %}?batch={{ dn.batch.pk }}">Batch #{{ dn.batch.pk }}</a>
@@ -60,15 +95,34 @@
                         {{ dn.get_status_display }}
                     </span>
                 </td>
-                <td>{{ dn.created_by.username|default:"-" }}</td>
+                <td style="text-align: right;">{{ dn.grand_total|floatformat:2 }}</td>
                 <td>{{ dn.created_at|date:"d/m/Y H:i" }}</td>
-                <td>
-                    <a href="{% url 'dashboard:delivery_note_detail' dn.pk %}" style="color: #007bff; text-decoration: none;">View</a>
+                <td style="white-space: nowrap;">
+                    <a href="{% url 'dashboard:delivery_note_detail' dn.pk %}"
+                       style="color: #007bff; text-decoration: none; margin-right: 10px;">View</a>
+
+                    {% if dn.status == 'DRAFT' %}
+                        <form method="post" action="{% url 'dashboard:confirm_delivery_note' dn.pk %}" style="display: inline;"
+                              onsubmit="return confirm('ยืนยัน Delivery Note #{{ dn.dn_number }}?')">
+                            {% csrf_token %}
+                            <button type="submit" style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">
+                                Confirm
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <form method="post" action="{% url 'dashboard:delete_delivery_note' dn.pk %}" style="display: inline;"
+                          onsubmit="return confirm('ลบ Delivery Note #{{ dn.dn_number }}?')">
+                        {% csrf_token %}
+                        <button type="submit" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            Delete
+                        </button>
+                    </form>
                 </td>
             </tr>
         {% empty %}
             <tr>
-                <td colspan="7" style="text-align: center; color: #666;">ไม่พบข้อมูล</td>
+                <td colspan="8" style="text-align: center; color: #666;">ไม่พบข้อมูล</td>
             </tr>
         {% endfor %}
         </tbody>

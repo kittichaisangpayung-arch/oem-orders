@@ -832,12 +832,21 @@ def shipping_summary(request):
 @login_required
 def delivery_note_list(request):
     """List all delivery notes"""
-    delivery_notes = DeliveryNote.objects.select_related("store", "batch", "created_by").all()
+    delivery_notes = DeliveryNote.objects.select_related("store", "store__customer", "batch", "created_by").all()
+
+    # Get latest batch as default
+    latest_batch = PurchaseOrderBatch.objects.order_by('-uploaded_at').first()
 
     # Apply filters
     search = request.GET.get('search', '')
     status = request.GET.get('status', '')
     batch_id = request.GET.get('batch', '')
+    customer_id = request.GET.get('customer', '')
+    store_id = request.GET.get('store', '')
+
+    # Default to latest batch if no filters applied
+    if not any([search, status, batch_id, customer_id, store_id]) and latest_batch:
+        batch_id = str(latest_batch.pk)
 
     if search:
         delivery_notes = delivery_notes.filter(
@@ -851,13 +860,29 @@ def delivery_note_list(request):
     if batch_id:
         delivery_notes = delivery_notes.filter(batch_id=batch_id)
 
+    if customer_id:
+        delivery_notes = delivery_notes.filter(store__customer_id=customer_id)
+
+    if store_id:
+        delivery_notes = delivery_notes.filter(store_id=store_id)
+
     delivery_notes = delivery_notes.order_by('-created_at')
+
+    # Get filter options
+    batches = PurchaseOrderBatch.objects.order_by('-uploaded_at')[:30]
+    customers = Customer.objects.filter(is_active=True).order_by('name')
+    stores = Store.objects.filter(is_active=True).order_by('name')
 
     context = {
         "delivery_notes": delivery_notes,
         "search": search,
         "status_filter": status,
         "batch_filter": batch_id,
+        "customer_filter": customer_id,
+        "store_filter": store_id,
+        "batches": batches,
+        "customers": customers,
+        "stores": stores,
     }
     return render(request, "dashboard/delivery_note_list.html", context)
 
@@ -964,11 +989,20 @@ def create_delivery_notes_from_batch(request, batch_id):
             unit_price = price_matrix[pid].get(store_id, Decimal('0'))
 
             # Delivery note should NOT include claims - only actual orders
+            # If store didn't order this product (qty = 0), don't include it at all
+            if qty == 0:
+                # Check if there's an override that forces quantity > 0
+                if (pid, store_id) in overrides and overrides[(pid, store_id)] > 0:
+                    display_qty = overrides[(pid, store_id)]
+                else:
+                    continue  # Skip this product - store didn't order it
+
+            # Store ordered this product (qty > 0)
             overridden = (pid, store_id) in overrides
             if overridden:
                 display_qty = overrides[(pid, store_id)]
-            elif qty > 0 and minimum > 0 and qty < minimum:
-                # Only apply minimum if store actually ordered (qty > 0)
+            elif minimum > 0 and qty < minimum:
+                # Apply minimum only if store actually ordered
                 display_qty = minimum
             else:
                 display_qty = qty
