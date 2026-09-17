@@ -193,9 +193,10 @@
             <table class="line-items-table">
                 <thead>
                     <tr>
-                        <th style="width: 50%;">สินค้า</th>
-                        <th style="width: 15%;">จำนวน (กล่อง)</th>
-                        <th style="width: 15%;">จำนวน (ชิ้น)</th>
+                        <th style="width: 40%;">สินค้า</th>
+                        <th style="width: 13%;">จำนวน (กล่อง)</th>
+                        <th style="width: 13%;">จำนวน (ชิ้น)</th>
+                        <th style="width: 15%;">ราคา (บาท)</th>
                         <th style="width: 10%;"></th>
                     </tr>
                 </thead>
@@ -211,6 +212,7 @@
                         </td>
                         <td><input type="number" class="qty-input" min="0" value="0"></td>
                         <td><input type="number" class="qty2-input" min="0" value="0"></td>
+                        <td><input type="number" class="price-input" min="0" step="0.01" value="0"></td>
                         <td>
                             <button type="button" class="btn btn-danger btn-remove-row" onclick="removeRow(this)" style="padding: 4px 8px; font-size: 12px;">ลบ</button>
                         </td>
@@ -250,6 +252,7 @@ function addLineItem() {
     newRow.querySelector('.product-select').value = '';
     newRow.querySelector('.qty-input').value = '0';
     newRow.querySelector('.qty2-input').value = '0';
+    newRow.querySelector('.price-input').value = '0';
 
     tbody.appendChild(newRow);
 }
@@ -283,6 +286,7 @@ function clearForm() {
             </td>
             <td><input type="number" class="qty-input" min="0" value="0"></td>
             <td><input type="number" class="qty2-input" min="0" value="0"></td>
+            <td><input type="number" class="price-input" min="0" step="0.01" value="0"></td>
             <td>
                 <button type="button" class="btn btn-danger btn-remove-row" onclick="removeRow(this)" style="padding: 4px 8px; font-size: 12px;">ลบ</button>
             </td>
@@ -318,12 +322,14 @@ function savePO() {
         const productId = row.querySelector('.product-select').value;
         const qty = parseInt(row.querySelector('.qty-input').value) || 0;
         const qty2 = parseInt(row.querySelector('.qty2-input').value) || 0;
+        const price = parseFloat(row.querySelector('.price-input').value) || 0;
 
         if (productId && (qty > 0 || qty2 > 0)) {
             lineItems.push({
                 product_id: productId,
                 qty: qty,
-                qty2: qty2
+                qty2: qty2,
+                price: price
             });
         }
     }

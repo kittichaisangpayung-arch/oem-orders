@@ -318,6 +318,7 @@ def save_manual_po(request, batch_id):
             product_id = item.get('product_id')
             qty = int(item.get('qty', 0))
             qty2 = int(item.get('qty2', 0))
+            price = Decimal(str(item.get('price', 0)))
 
             product = Product.objects.get(pk=product_id)
 
@@ -329,8 +330,8 @@ def save_manual_po(request, batch_id):
                 uom_raw=product.uom,
                 qty=qty,
                 qty2=qty2,
-                unit_amount=Decimal('0.00'),
-                line_total=Decimal('0.00'),
+                unit_amount=price,
+                line_total=price * (qty if qty > 0 else qty2),
                 line_no=idx,
             )
 

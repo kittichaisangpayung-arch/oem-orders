@@ -72,6 +72,14 @@ class ManualPOLineItemForm(forms.Form):
         label='จำนวน (ชิ้น)',
         widget=forms.NumberInput(attrs={'class': 'qty2-input'})
     )
+    price = forms.DecimalField(
+        min_value=0,
+        initial=0,
+        decimal_places=2,
+        max_digits=10,
+        label='ราคา (บาท)',
+        widget=forms.NumberInput(attrs={'class': 'price-input', 'step': '0.01'})
+    )
 
 
 class ManualPOEntryForm(forms.Form):
