@@ -69,18 +69,29 @@ class PurchaseOrder(models.Model):
         PARTIAL = "PARTIAL", "Partial (row count mismatch)"
         FAILED = "FAILED", "Failed"
 
+    class EntryMode(models.TextChoices):
+        PDF = "PDF", "PDF Upload"
+        MANUAL = "MANUAL", "Manual Entry"
+
     batch = models.ForeignKey(PurchaseOrderBatch, on_delete=models.CASCADE, related_name="purchase_orders")
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="purchase_orders")
     store = models.ForeignKey(
         Store, on_delete=models.SET_NULL, null=True, blank=True, related_name="purchase_orders"
     )
 
+    entry_mode = models.CharField(
+        max_length=20,
+        choices=EntryMode.choices,
+        default=EntryMode.PDF,
+        help_text="How this PO was created"
+    )
+
     order_no = models.CharField(max_length=100, blank=True)
     store_code_raw = models.CharField(max_length=50, blank=True)
     store_name_raw = models.CharField(max_length=200, blank=True)
 
-    source_filename = models.CharField(max_length=255)
-    source_file = models.FileField(upload_to=po_pdf_upload_path)
+    source_filename = models.CharField(max_length=255, blank=True)
+    source_file = models.FileField(upload_to=po_pdf_upload_path, blank=True, null=True)
 
     parse_status = models.CharField(max_length=20, choices=ParseStatus.choices, default=ParseStatus.OK)
     expected_row_count = models.PositiveIntegerField(default=0)

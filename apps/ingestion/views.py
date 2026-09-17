@@ -1,10 +1,13 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 from apps.core.access import in_sales_group, staff_required
+from apps.core.models import Store, Product
 
-from .forms import BatchUploadForm
-from .models import PurchaseOrderBatch
+from .forms import BatchUploadForm, ManualPOEntryForm
+from .models import PurchaseOrderBatch, PurchaseOrder, POLineItem
 from .services import ingest_batch
 
 
@@ -16,6 +19,32 @@ def upload_batch(request):
     if request.method == "POST":
         form = BatchUploadForm(request.POST, request.FILES)
         if form.is_valid():
+            entry_mode = form.cleaned_data.get("entry_mode")
+
+            # If manual mode, redirect to manual entry page
+            if entry_mode == "MANUAL":
+                from django.utils import timezone
+                from datetime import datetime, time
+
+                upload_date = form.cleaned_data.get("upload_date")
+                if upload_date:
+                    uploaded_at = timezone.make_aware(
+                        datetime.combine(upload_date, time(0, 0, 0))
+                    )
+                else:
+                    uploaded_at = timezone.now()
+
+                # Create batch for manual entry
+                batch = PurchaseOrderBatch.objects.create(
+                    customer=form.cleaned_data["customer"],
+                    uploaded_by=request.user,
+                    uploaded_at=uploaded_at,
+                    status=PurchaseOrderBatch.Status.PENDING,
+                    notes="Manual Entry"
+                )
+                return redirect("ingestion:manual_entry", batch_id=batch.pk)
+
+            # PDF mode - existing logic
             from django.utils import timezone
             from datetime import datetime, time
             import logging
@@ -214,3 +243,128 @@ def delete_batch(request, batch_id):
     batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
     batch.delete()
     return redirect("ingestion:upload")
+
+
+@login_required
+def manual_entry(request, batch_id):
+    """Manual PO entry page"""
+    batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
+
+    if batch.status != PurchaseOrderBatch.Status.PENDING:
+        return redirect("ingestion:batch_result", batch_id=batch.pk)
+
+    # Get all active stores and products for this customer
+    stores = Store.objects.filter(
+        customer=batch.customer,
+        is_active=True
+    ).order_by('name')
+
+    products = Product.objects.filter(is_active=True).order_by(
+        'sort_rank', 'barcode'
+    )
+
+    context = {
+        "batch": batch,
+        "stores": stores,
+        "products": products,
+    }
+    return render(request, "ingestion/manual_entry.html", context)
+
+
+@login_required
+@require_http_methods(["POST"])
+def save_manual_po(request, batch_id):
+    """Save manually entered PO data"""
+    import json
+    from decimal import Decimal
+
+    batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
+
+    if batch.status != PurchaseOrderBatch.Status.PENDING:
+        return JsonResponse({"success": False, "error": "Batch already processed"})
+
+    try:
+        data = json.loads(request.body)
+        store_id = data.get('store_id')
+        order_no = data.get('order_no', '')
+        line_items = data.get('line_items', [])
+
+        if not store_id:
+            return JsonResponse({"success": False, "error": "กรุณาเลือกสาขา"})
+
+        if not line_items:
+            return JsonResponse({"success": False, "error": "กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ"})
+
+        store = Store.objects.get(pk=store_id, customer=batch.customer)
+
+        # Create PO with manual entry mode
+        po = PurchaseOrder.objects.create(
+            batch=batch,
+            customer=batch.customer,
+            store=store,
+            order_no=order_no,
+            store_code_raw=store.store_code,
+            store_name_raw=store.name,
+            source_filename=f"Manual Entry - {store.name}",
+            entry_mode=PurchaseOrder.EntryMode.MANUAL,
+            parse_status=PurchaseOrder.ParseStatus.OK,
+            expected_row_count=len(line_items),
+            parsed_row_count=len(line_items),
+            parser_used="manual",
+        )
+
+        # Create line items
+        for idx, item in enumerate(line_items, start=1):
+            product_id = item.get('product_id')
+            qty = int(item.get('qty', 0))
+            qty2 = int(item.get('qty2', 0))
+
+            product = Product.objects.get(pk=product_id)
+
+            POLineItem.objects.create(
+                purchase_order=po,
+                product=product,
+                barcode_raw=product.barcode,
+                description_raw=product.description,
+                uom_raw=product.uom,
+                qty=qty,
+                qty2=qty2,
+                unit_amount=Decimal('0.00'),
+                line_total=Decimal('0.00'),
+                line_no=idx,
+            )
+
+        return JsonResponse({
+            "success": True,
+            "po_id": po.pk,
+            "message": f"บันทึก PO สำหรับ {store.name} สำเร็จ"
+        })
+
+    except Store.DoesNotExist:
+        return JsonResponse({"success": False, "error": "ไม่พบสาขาที่เลือก"})
+    except Product.DoesNotExist:
+        return JsonResponse({"success": False, "error": "ไม่พบสินค้าที่เลือก"})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
+
+
+@login_required
+@require_http_methods(["POST"])
+def finish_manual_entry(request, batch_id):
+    """Finish manual entry and redirect to preview"""
+    batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
+
+    if batch.status == PurchaseOrderBatch.Status.PENDING:
+        # Check if at least one PO was created
+        if not batch.purchase_orders.exists():
+            return JsonResponse({
+                "success": False,
+                "error": "กรุณาเพิ่ม PO อย่างน้อย 1 รายการ"
+            })
+
+        return JsonResponse({
+            "success": True,
+            "redirect_url": f"/ingestion/batch/{batch.pk}/preview/"
+        })
+
+    return JsonResponse({"success": False, "error": "Batch already processed"})

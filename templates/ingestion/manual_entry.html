@@ -1,0 +1,429 @@
+{% extends "base.html" %}
+{% block title %}กรอกข้อมูล PO แบบ Manual{% endblock %}
+{% block content %}
+<style>
+.manual-entry-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.po-form-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+.po-form-card h3 {
+    margin-top: 0;
+    color: #38BDF8;
+    font-size: 18px;
+    margin-bottom: 16px;
+}
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+.form-group label {
+    color: #F8FAFC;
+    font-size: 14px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+.form-group select,
+.form-group input {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    color: #F8FAFC;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+.form-group select:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: #38BDF8;
+}
+.line-items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+.line-items-table th {
+    background: #0F172A;
+    color: #F8FAFC;
+    padding: 10px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 2px solid #334155;
+}
+.line-items-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #334155;
+}
+.line-items-table input,
+.line-items-table select {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 4px;
+    color: #F8FAFC;
+    padding: 6px 8px;
+    font-size: 13px;
+    width: 100%;
+}
+.line-items-table input:focus,
+.line-items-table select:focus {
+    outline: none;
+    border-color: #38BDF8;
+}
+.btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+}
+.btn-primary {
+    background: #38BDF8;
+    color: #0F172A;
+}
+.btn-primary:hover {
+    background: #22D3EE;
+}
+.btn-success {
+    background: #10B981;
+    color: #FFF;
+}
+.btn-success:hover {
+    background: #059669;
+}
+.btn-danger {
+    background: #EF4444;
+    color: #FFF;
+}
+.btn-danger:hover {
+    background: #DC2626;
+}
+.btn-secondary {
+    background: #64748B;
+    color: #FFF;
+}
+.btn-secondary:hover {
+    background: #475569;
+}
+.action-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+.saved-pos {
+    margin-top: 30px;
+}
+.saved-po-item {
+    background: #0F172A;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.saved-po-info {
+    color: #F8FAFC;
+}
+.saved-po-info strong {
+    color: #38BDF8;
+}
+.message {
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+    font-size: 14px;
+}
+.message-success {
+    background: #064E3B;
+    border: 1px solid #10B981;
+    color: #10B981;
+}
+.message-error {
+    background: #7F1D1D;
+    border: 1px solid #EF4444;
+    color: #EF4444;
+}
+</style>
+
+<div class="manual-entry-container">
+    <div class="card">
+        <h2>กรอกข้อมูล PO แบบ Manual - Batch #{{ batch.pk }}</h2>
+        <p style="color: #94A3B8; margin-bottom: 20px;">
+            ลูกค้า: <strong style="color: #38BDF8;">{{ batch.customer }}</strong>
+        </p>
+
+        <div id="message-container"></div>
+
+        <div class="po-form-card">
+            <h3>เพิ่ม PO ใหม่</h3>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="store-select">สาขา *</label>
+                    <select id="store-select" required>
+                        <option value="">-- เลือกสาขา --</option>
+                        {% for store in stores %}
+                        <option value="{{ store.pk }}">{{ store.name }} ({{ store.store_code }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="order-no">เลขที่ PO (ถ้ามี)</label>
+                    <input type="text" id="order-no" placeholder="เช่น PO-2024-001">
+                </div>
+            </div>
+
+            <h4 style="color: #F8FAFC; margin: 20px 0 10px 0; font-size: 16px;">รายการสินค้า</h4>
+
+            <table class="line-items-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">สินค้า</th>
+                        <th style="width: 15%;">จำนวน (กล่อง)</th>
+                        <th style="width: 15%;">จำนวน (ชิ้น)</th>
+                        <th style="width: 10%;"></th>
+                    </tr>
+                </thead>
+                <tbody id="line-items-tbody">
+                    <tr class="line-item-row">
+                        <td>
+                            <select class="product-select">
+                                <option value="">-- เลือกสินค้า --</option>
+                                {% for product in products %}
+                                <option value="{{ product.pk }}">{{ product.barcode }} - {{ product.description }}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                        <td><input type="number" class="qty-input" min="0" value="0"></td>
+                        <td><input type="number" class="qty2-input" min="0" value="0"></td>
+                        <td>
+                            <button type="button" class="btn btn-danger btn-remove-row" onclick="removeRow(this)" style="padding: 4px 8px; font-size: 12px;">ลบ</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <button type="button" class="btn btn-secondary" onclick="addLineItem()">+ เพิ่มรายการสินค้า</button>
+
+            <div class="action-buttons">
+                <button type="button" class="btn btn-success" onclick="savePO()">บันทึก PO นี้</button>
+                <button type="button" class="btn btn-primary" onclick="clearForm()">ล้างฟอร์ม</button>
+            </div>
+        </div>
+
+        <div class="saved-pos" id="saved-pos-container" style="display: none;">
+            <h3 style="color: #F8FAFC; margin-bottom: 16px;">PO ที่บันทึกแล้ว</h3>
+            <div id="saved-pos-list"></div>
+        </div>
+
+        <div class="action-buttons" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #334155;">
+            <button type="button" class="btn btn-primary" onclick="finishEntry()">เสร็จสิ้น - ไปหน้า Preview</button>
+            <a href="{% url 'ingestion:cancel_batch' batch.pk %}" class="btn btn-danger" onclick="return confirm('ยกเลิกและลบ Batch นี้?')">ยกเลิก</a>
+        </div>
+    </div>
+</div>
+
+<script>
+let savedPOs = [];
+
+function addLineItem() {
+    const tbody = document.getElementById('line-items-tbody');
+    const firstRow = tbody.querySelector('.line-item-row');
+    const newRow = firstRow.cloneNode(true);
+
+    // Clear values
+    newRow.querySelector('.product-select').value = '';
+    newRow.querySelector('.qty-input').value = '0';
+    newRow.querySelector('.qty2-input').value = '0';
+
+    tbody.appendChild(newRow);
+}
+
+function removeRow(btn) {
+    const tbody = document.getElementById('line-items-tbody');
+    if (tbody.querySelectorAll('.line-item-row').length > 1) {
+        btn.closest('.line-item-row').remove();
+    } else {
+        showMessage('ต้องมีรายการสินค้าอย่างน้อย 1 รายการ', 'error');
+    }
+}
+
+function clearForm() {
+    document.getElementById('store-select').value = '';
+    document.getElementById('order-no').value = '';
+
+    const tbody = document.getElementById('line-items-tbody');
+    tbody.innerHTML = '';
+
+    // Add one empty row
+    const firstRowHTML = `
+        <tr class="line-item-row">
+            <td>
+                <select class="product-select">
+                    <option value="">-- เลือกสินค้า --</option>
+                    {% for product in products %}
+                    <option value="{{ product.pk }}">{{ product.barcode }} - {{ product.description }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td><input type="number" class="qty-input" min="0" value="0"></td>
+            <td><input type="number" class="qty2-input" min="0" value="0"></td>
+            <td>
+                <button type="button" class="btn btn-danger btn-remove-row" onclick="removeRow(this)" style="padding: 4px 8px; font-size: 12px;">ลบ</button>
+            </td>
+        </tr>
+    `;
+    tbody.innerHTML = firstRowHTML;
+}
+
+function showMessage(text, type) {
+    const container = document.getElementById('message-container');
+    const messageClass = type === 'success' ? 'message-success' : 'message-error';
+    container.innerHTML = `<div class="message ${messageClass}">${text}</div>`;
+
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 5000);
+}
+
+function savePO() {
+    const storeId = document.getElementById('store-select').value;
+    const orderNo = document.getElementById('order-no').value;
+
+    if (!storeId) {
+        showMessage('กรุณาเลือกสาขา', 'error');
+        return;
+    }
+
+    // Collect line items
+    const rows = document.querySelectorAll('.line-item-row');
+    const lineItems = [];
+
+    for (let row of rows) {
+        const productId = row.querySelector('.product-select').value;
+        const qty = parseInt(row.querySelector('.qty-input').value) || 0;
+        const qty2 = parseInt(row.querySelector('.qty2-input').value) || 0;
+
+        if (productId && (qty > 0 || qty2 > 0)) {
+            lineItems.push({
+                product_id: productId,
+                qty: qty,
+                qty2: qty2
+            });
+        }
+    }
+
+    if (lineItems.length === 0) {
+        showMessage('กรุณาเพิ่มสินค้าอย่างน้อย 1 รายการ (และระบุจำนวน)', 'error');
+        return;
+    }
+
+    // Send to server
+    fetch("{% url 'ingestion:save_manual_po' batch.pk %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            store_id: storeId,
+            order_no: orderNo,
+            line_items: lineItems
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message, 'success');
+
+            // Add to saved list
+            const storeName = document.getElementById('store-select').selectedOptions[0].text;
+            savedPOs.push({
+                po_id: data.po_id,
+                store_name: storeName,
+                order_no: orderNo,
+                item_count: lineItems.length
+            });
+
+            updateSavedPOsList();
+            clearForm();
+        } else {
+            showMessage('เกิดข้อผิดพลาด: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('เกิดข้อผิดพลาดในการบันทึก', 'error');
+        console.error('Error:', error);
+    });
+}
+
+function updateSavedPOsList() {
+    const container = document.getElementById('saved-pos-container');
+    const list = document.getElementById('saved-pos-list');
+
+    if (savedPOs.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    list.innerHTML = '';
+
+    savedPOs.forEach(po => {
+        const item = document.createElement('div');
+        item.className = 'saved-po-item';
+        item.innerHTML = `
+            <div class="saved-po-info">
+                <strong>${po.store_name}</strong>
+                ${po.order_no ? ' - PO: ' + po.order_no : ''}
+                <span style="color: #94A3B8;"> (${po.item_count} รายการ)</span>
+            </div>
+            <span style="color: #10B981; font-size: 20px;">✓</span>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function finishEntry() {
+    if (savedPOs.length === 0) {
+        showMessage('กรุณาบันทึก PO อย่างน้อย 1 รายการก่อนเสร็จสิ้น', 'error');
+        return;
+    }
+
+    fetch("{% url 'ingestion:finish_manual_entry' batch.pk %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else {
+            showMessage('เกิดข้อผิดพลาด: ' + data.error, 'error');
+        }
+    })
+    .catch(error => {
+        showMessage('เกิดข้อผิดพลาด', 'error');
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}

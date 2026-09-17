@@ -10,13 +10,17 @@
             {{ form.customer }}
         </p>
         <p>
+            <label>{{ form.entry_mode.label }}:</label>
+            {{ form.entry_mode }}
+        </p>
+        <p>
             <label>{{ form.upload_date.label }}:</label><br>
             {{ form.upload_date }}
             {% if form.upload_date.help_text %}
             <small style="color:#7f8c8d; display:block; margin-top:4px;">{{ form.upload_date.help_text }}</small>
             {% endif %}
         </p>
-        <p>
+        <p id="files-field">
             <label>ไฟล์ PDF (เลือกได้หลายไฟล์):</label><br>
             {{ form.files }}
         </p>
@@ -59,4 +63,23 @@
         </tbody>
     </table>
 </div>
+
+<script>
+function toggleEntryMode(mode) {
+    const filesField = document.getElementById('files-field');
+    if (mode === 'MANUAL') {
+        filesField.style.display = 'none';
+    } else {
+        filesField.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const entryModeSelect = document.querySelector('select[name="entry_mode"]');
+    if (entryModeSelect) {
+        toggleEntryMode(entryModeSelect.value);
+    }
+});
+</script>
 {% endblock %}

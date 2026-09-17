@@ -81,6 +81,7 @@
         <thead>
             <tr>
                 <th class="label">ไฟล์</th>
+                <th class="label">โหมด</th>
                 <th class="label">Order No.</th>
                 <th class="label">สาขา</th>
                 <th>สถานะ</th>
@@ -93,6 +94,13 @@
         {% for po in purchase_orders %}
             <tr>
                 <td class="label">{{ po.source_filename }}</td>
+                <td class="label">
+                    {% if po.entry_mode == 'MANUAL' %}
+                        <span style="color: #F59E0B; font-weight: 500;">📝 Manual</span>
+                    {% else %}
+                        <span style="color: #38BDF8;">📄 PDF</span>
+                    {% endif %}
+                </td>
                 <td class="label">{{ po.order_no }}</td>
                 <td class="label">
                     {% if po.store %}{{ po.store.name }}{% else %}<em style="color:#c0392b;">{{ po.store_name_raw }} (ไม่พบใน mapping)</em>{% endif %}
