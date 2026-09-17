@@ -6,4 +6,7 @@ class ParsersConfig(AppConfig):
     label = 'parsers'
 
     def ready(self):
-        from . import donki  # noqa: F401  (registers DonkiParser with the registry)
+        try:
+            from . import donki  # noqa: F401  (registers DonkiParser with the registry)
+        except ImportError:
+            pass  # pdfplumber not available, skip parser registration
