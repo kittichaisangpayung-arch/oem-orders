@@ -322,6 +322,10 @@ def save_manual_po(request, batch_id):
 
             product = Product.objects.get(pk=product_id)
 
+            # Calculate line total: price * quantity (use qty if > 0, otherwise qty2)
+            total_quantity = qty if qty > 0 else qty2
+            line_total = price * Decimal(str(total_quantity))
+
             POLineItem.objects.create(
                 purchase_order=po,
                 product=product,
@@ -331,7 +335,7 @@ def save_manual_po(request, batch_id):
                 qty=qty,
                 qty2=qty2,
                 unit_amount=price,
-                line_total=price * (qty if qty > 0 else qty2),
+                line_total=line_total,
                 line_no=idx,
             )
 
