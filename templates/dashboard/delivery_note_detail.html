@@ -269,7 +269,7 @@
                     <strong>เลขที่เอกสาร / Document No.:</strong> <span style="font-size: 12px; font-weight: bold;">{{ dn.dn_number }}</span>
                 </td>
                 <td style="width: 30%; text-align: right;">
-                    <strong>วันที่ / Date:</strong> {{ dn.created_at|date:"d/m/Y" }}
+                    <strong>วันที่ / Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"d/m/Y" }}{% else %}{{ dn.created_at|date:"d/m/Y" }}{% endif %}
                 </td>
             </tr>
         </table>
