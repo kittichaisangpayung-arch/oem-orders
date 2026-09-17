@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from adminsortable2.admin import SortableAdminMixin
+
+try:
+    from adminsortable2.admin import SortableAdminMixin
+    HAS_SORTABLE = True
+except ImportError:
+    HAS_SORTABLE = False
+    SortableAdminMixin = object
 
 from .models import CompanyProfile, Customer, CustomerProduct, Factory, Product, Store
 
@@ -60,19 +66,34 @@ class StoreAdmin(admin.ModelAdmin):
     search_fields = ["name", "store_code"]
 
 
-@admin.register(Product)
-class ProductAdmin(SortableAdminMixin, admin.ModelAdmin):
-    list_display = ["image_thumbnail", "barcode", "description", "product_group", "factory", "uom", "min_order_qty", "sort_rank", "is_active"]
-    search_fields = ["barcode", "description", "product_group"]
-    list_filter = ["product_group", "factory", "is_active"]
-    ordering = ["sort_rank", "barcode"]
-    fields = ["barcode", "description", "product_group", "image", "uom", "factory", "min_order_qty", "sort_rank", "is_active"]
+if HAS_SORTABLE:
+    @admin.register(Product)
+    class ProductAdmin(SortableAdminMixin, admin.ModelAdmin):
+        list_display = ["image_thumbnail", "barcode", "description", "product_group", "factory", "uom", "min_order_qty", "sort_rank", "is_active"]
+        search_fields = ["barcode", "description", "product_group"]
+        list_filter = ["product_group", "factory", "is_active"]
+        ordering = ["sort_rank", "barcode"]
+        fields = ["barcode", "description", "product_group", "image", "uom", "factory", "min_order_qty", "sort_rank", "is_active"]
 
-    def image_thumbnail(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" />', obj.image.url)
-        return "-"
-    image_thumbnail.short_description = "รูป"
+        def image_thumbnail(self, obj):
+            if obj.image:
+                return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" />', obj.image.url)
+            return "-"
+        image_thumbnail.short_description = "รูป"
+else:
+    @admin.register(Product)
+    class ProductAdmin(admin.ModelAdmin):
+        list_display = ["image_thumbnail", "barcode", "description", "product_group", "factory", "uom", "min_order_qty", "sort_rank", "is_active"]
+        search_fields = ["barcode", "description", "product_group"]
+        list_filter = ["product_group", "factory", "is_active"]
+        ordering = ["sort_rank", "barcode"]
+        fields = ["barcode", "description", "product_group", "image", "uom", "factory", "min_order_qty", "sort_rank", "is_active"]
+
+        def image_thumbnail(self, obj):
+            if obj.image:
+                return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" />', obj.image.url)
+            return "-"
+        image_thumbnail.short_description = "รูป"
 
 
 @admin.register(CustomerProduct)
