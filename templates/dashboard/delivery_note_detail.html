@@ -357,7 +357,6 @@
     background: #fff;
     padding: 10mm 15mm;
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    min-height: 297mm;
     margin-bottom: 20px;
     font-size: 10px;
 }
@@ -384,8 +383,15 @@
     .dn-page {
         padding: 10mm 15mm;
         box-shadow: none;
-        page-break-after: always;
         margin-bottom: 0;
+    }
+
+    .dn-page:not(:last-child) {
+        page-break-after: always;
+    }
+
+    .dn-page:last-child {
+        page-break-after: avoid;
     }
 
     nav {
