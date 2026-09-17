@@ -1,12 +1,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-try:
-    from adminsortable2.admin import SortableAdminMixin
-    HAS_SORTABLE = True
-except ImportError:
-    HAS_SORTABLE = False
-    SortableAdminMixin = object
+# Disable adminsortable2 to avoid static files issues
+HAS_SORTABLE = False
+SortableAdminMixin = object
 
 from .models import CompanyProfile, Customer, CustomerProduct, Factory, Product, Store
 
