@@ -99,27 +99,27 @@
         <table class="dn-items-table" style="width: 100%; border-collapse: collapse; font-size: 9px;">
             <thead>
                 <tr style="background: #e8e8e8;">
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 35px;">ลำดับ / No.</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 60px;">รูปภาพ / Image</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left;">รายการสินค้า / Description</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 85px;">Barcode</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 60px;">จำนวน / Qty</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 50px;">หน่วย / Unit</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 75px;">ราคา/หน่วย / Unit Price</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 85px;">จำนวนเงิน / Amount</th>
-                    <th style="border: 1px solid #000; padding: 4px; text-align: left; width: 70px;">หมายเหตุ / Remark</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 35px;">ลำดับ / No.</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 60px;">รูปภาพ / Image</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center;">รายการสินค้า / Description</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 85px;">Barcode</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 60px;">จำนวน / Qty</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 50px;">หน่วย / Unit</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 75px;">ราคา/หน่วย / Unit Price</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 85px;">จำนวนเงิน / Amount</th>
+                    <th style="border: 1px solid #000; padding: 4px; text-align: center; width: 70px;">หมายเหตุ / Remark</th>
                 </tr>
             </thead>
             <tbody>
             {% for item in page_items %}
                 <tr>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left;">{{ item.line_no }}</td>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 9px;">{{ item.line_no }}</td>
                     <td style="border: 1px solid #000; padding: 3px; text-align: center;">
                         {% if item.product.image %}
                             <img src="{{ item.product.image.url }}" alt="{{ item.product.description }}"
                                  style="width: 50px; height: 50px; object-fit: contain;">
                         {% else %}
-                            <div style="width: 50px; height: 50px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #999;">
+                            <div style="width: 50px; height: 50px; background: #f5f5f5; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #999;">
                                 NO IMAGE
                             </div>
                         {% endif %}
@@ -127,8 +127,8 @@
                     <td style="border: 1px solid #000; padding: 4px; text-align: left;">
                         <div style="font-size: 9px; line-height: 1.2;">{{ item.product.description }}</div>
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left;">
-                        <div style="font-family: 'Courier New', monospace; font-size: 8px;">{{ item.product.barcode }}</div>
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center;">
+                        <div style="font-family: 'Courier New', monospace; font-size: 9px;">{{ item.product.barcode }}</div>
                         <!-- Barcode image placeholder -->
                         <svg style="width: 70px; height: 25px; margin-top: 2px;">
                             <rect width="2" height="25" x="0" fill="#000"/>
@@ -157,19 +157,19 @@
                             <rect width="2" height="25" x="66" fill="#000"/>
                         </svg>
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left; font-weight: bold; font-size: 11px;">
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-weight: bold; font-size: 9px;">
                         {{ item.quantity|intcomma }}
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left;">
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 9px;">
                         {{ item.product.uom }}
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left;">
+                    <td style="border: 1px solid #000; padding: 4px; text-align: right; font-size: 9px;">
                         {{ item.unit_price|floatformat:2|intcomma }}
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left; font-weight: bold;">
+                    <td style="border: 1px solid #000; padding: 4px; text-align: right; font-weight: bold; font-size: 9px;">
                         {{ item.amount|floatformat:2|intcomma }}
                     </td>
-                    <td style="border: 1px solid #000; padding: 4px; text-align: left; font-size: 8px;">
+                    <td style="border: 1px solid #000; padding: 4px; text-align: center; font-size: 9px;">
                         {% if item.claimed_quantity > 0 %}
                             <span style="color: #d9534f; font-weight: bold;">เคลม: {{ item.claimed_quantity|intcomma }}</span>
                         {% endif %}
