@@ -73,7 +73,7 @@
                     {% endif %}
                 </td>
                 <td style="padding: 4px; border-top: 1px solid #000; text-align: left;">
-                    <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"m/d/Y" }}{% else %}{{ dn.created_at|date:"m/d/Y" }}{% endif %}
+                    <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"d/m/Y" }}{% else %}{{ dn.created_at|date:"d/m/Y" }}{% endif %}
                 </td>
             </tr>
             <tr>
