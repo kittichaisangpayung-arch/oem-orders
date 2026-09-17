@@ -73,7 +73,7 @@
                     {% endif %}
                 </td>
                 <td style="padding: 4px; border-top: 1px solid #000; text-align: left;">
-                    <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"d/m/Y" }}{% else %}{{ dn.created_at|date:"d/m/Y" }}{% endif %}
+                    <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"Y/m/d" }}{% else %}{{ dn.created_at|date:"Y/m/d" }}{% endif %}
                 </td>
             </tr>
             <tr>
@@ -269,7 +269,7 @@
                     <strong>เลขที่เอกสาร / Document No.:</strong> <span style="font-size: 12px; font-weight: bold;">{{ dn.dn_number }}</span>
                 </td>
                 <td style="width: 30%; text-align: right;">
-                    <strong>วันที่ / Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"d/m/Y" }}{% else %}{{ dn.created_at|date:"d/m/Y" }}{% endif %}
+                    <strong>วันที่ / Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"Y/m/d" }}{% else %}{{ dn.created_at|date:"Y/m/d" }}{% endif %}
                 </td>
             </tr>
         </table>
