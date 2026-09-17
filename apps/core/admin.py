@@ -69,6 +69,7 @@ class StoreAdmin(admin.ModelAdmin):
 if HAS_SORTABLE:
     @admin.register(Product)
     class ProductAdmin(SortableAdminMixin, admin.ModelAdmin):
+        change_list_template = 'admin/change_list.html'  # Use default template instead of adminsortable2
         list_display = ["image_thumbnail", "barcode", "description", "product_group", "factory", "uom", "min_order_qty", "sort_rank", "is_active"]
         search_fields = ["barcode", "description", "product_group"]
         list_filter = ["product_group", "factory", "is_active"]
