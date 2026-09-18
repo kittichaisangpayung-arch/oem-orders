@@ -67,13 +67,13 @@
                         <td style="border-right: 1px solid #ddd; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% if cell.qty > 0 %}{% cycle '#e3f2fd' '#fff3e0' %}{% else %}#fff{% endif %}; {% if cell.qty > 0 %}font-weight: bold;{% endif %}">
                             {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
                         </td>
-                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; padding: 8px; text-align: center; background: {% if cell.adjustment != 0 %}{% cycle '#f3e5f5' '#e1bee7' %}{% else %}#f9f9f9{% endif %}; {% if cell.adjustment > 0 %}color: #22c55e; font-weight: bold;{% elif cell.adjustment < 0 %}color: #dc3545; font-weight: bold;{% endif %}">
-                            {% if cell.adjustment > 0 %}+{{ cell.adjustment }}{% elif cell.adjustment < 0 %}{{ cell.adjustment }}{% else %}-{% endif %}
+                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; padding: 8px; text-align: center; background: {% if cell.adjustment > 0 %}{% cycle '#f3e5f5' '#e1bee7' %}{% else %}#f9f9f9{% endif %}; {% if cell.adjustment > 0 %}font-weight: bold;{% endif %}">
+                            {% if cell.adjustment > 0 %}{{ cell.adjustment }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
                     <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 8px; text-align: center; background: #fff3cd; font-weight: bold;">{{ row.row_total }}</td>
-                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: #f3e5f5; {% if row.row_adjustment_total > 0 %}color: #22c55e; font-weight: bold;{% elif row.row_adjustment_total < 0 %}color: #dc3545; font-weight: bold;{% endif %}">
-                        {% if row.row_adjustment_total > 0 %}+{{ row.row_adjustment_total }}{% elif row.row_adjustment_total < 0 %}{{ row.row_adjustment_total }}{% else %}-{% endif %}
+                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: #f3e5f5; {% if row.row_adjustment_total > 0 %}font-weight: bold;{% endif %}">
+                        {% if row.row_adjustment_total > 0 %}{{ row.row_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -83,13 +83,13 @@
                     <td colspan="2" style="border: 2px solid #34495e; padding: 8px; text-align: right; background: #ecf0f1;">รวมทั้งหมด:</td>
                     {% for col in store_columns %}
                         <td style="border-right: 1px solid #ddd; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% cycle '#bbdefb' '#ffe0b2' %}; font-weight: bold;">{{ col.total }}</td>
-                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% cycle '#e1bee7' '#ce93d8' %}; font-weight: bold; {% if col.adjustment_total > 0 %}color: #22c55e;{% elif col.adjustment_total < 0 %}color: #dc3545;{% endif %}">
-                            {% if col.adjustment_total > 0 %}+{{ col.adjustment_total }}{% elif col.adjustment_total < 0 %}{{ col.adjustment_total }}{% else %}-{% endif %}
+                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 8px; text-align: center; background: {% cycle '#e1bee7' '#ce93d8' %}; font-weight: bold;">
+                            {% if col.adjustment_total > 0 %}{{ col.adjustment_total }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
                     <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 8px; text-align: center; background: #ffc107; font-size: 18px;">{{ grand_total }}</td>
-                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: {% if grand_adjustment_total > 0 %}#9c27b0{% elif grand_adjustment_total < 0 %}#ef5350{% else %}#bdbdbd{% endif %}; color: #fff; font-size: 18px;">
-                        {% if grand_adjustment_total > 0 %}+{{ grand_adjustment_total }}{% elif grand_adjustment_total < 0 %}{{ grand_adjustment_total }}{% else %}-{% endif %}
+                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 8px; text-align: center; background: #9c27b0; color: #fff; font-size: 18px;">
+                        {% if grand_adjustment_total > 0 %}{{ grand_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
             </tfoot>

@@ -351,14 +351,14 @@ def production_summary(request):
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
-            net_qty = qty - claimed + compensated
+            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
 
             original_total += qty
 
-            # Apply override or minimum adjustment per store (net_qty already includes compensations)
+            # Apply override or minimum adjustment per store
             if (pid, sid) in overrides:
-                final_qty = overrides[(pid, sid)] - claimed + compensated
+                final_qty = overrides[(pid, sid)] + claimed + compensated
                 adjusted_total += final_qty
                 has_override = True
             elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
@@ -844,14 +844,14 @@ def factory_summary(request):
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
-            net_qty = qty - claimed + compensated
+            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
 
             original_total += qty
 
             # Apply override or minimum adjustment per store (including claims and compensations)
             if (pid, sid) in overrides:
-                final_qty = overrides[(pid, sid)] - claimed + compensated
+                final_qty = overrides[(pid, sid)] + claimed + compensated
                 adjusted_total_before_claim += final_qty
             elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
                 # Only apply minimum if store actually ordered (qty > 0)
@@ -1044,8 +1044,8 @@ def shipping_summary(request):
             qty = matrix[pid].get(sid, 0)  # Will be 0 if not ordered
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
-            net_adjustment = compensated - claimed  # Net adjustment (positive if more compensation, negative if more claims)
-            net_qty = qty - claimed + compensated
+            net_adjustment = claimed + compensated  # Combined claims + compensation
+            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
 
             # Calculate display_qty for ORDER column (not including claims in display)
@@ -1059,9 +1059,9 @@ def shipping_summary(request):
                 # If qty=0 (not ordered), show 0 even if there are claims
                 display_qty = qty
 
-            # Calculate net for production total (order - claims + compensations, with minimum applied)
+            # Calculate net for production total (order + claims + compensations, with minimum applied)
             if overridden:
-                net_for_total = overrides[(pid, sid)] - claimed + compensated
+                net_for_total = overrides[(pid, sid)] + claimed + compensated
             elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
                 net_for_total = minimum
             else:
@@ -1069,7 +1069,7 @@ def shipping_summary(request):
 
             cells.append({
                 'qty': display_qty,  # Order qty only, with minimum if ordered
-                'adjustment': net_adjustment,  # Net adjustment (compensation - claim)
+                'adjustment': net_adjustment,  # Combined claims + compensation
             })
             row_total += net_for_total
             row_adjustment_total += net_adjustment
