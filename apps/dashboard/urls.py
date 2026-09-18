@@ -4,6 +4,7 @@ from . import views
 from . import product_trends
 from . import product_inactivity
 from . import claim_analytics
+from . import compensation_analytics
 
 app_name = "dashboard"
 
@@ -37,4 +38,7 @@ urlpatterns = [
 
     # Claim Analytics
     path("claims/analytics/", claim_analytics.claim_summary_dashboard, name="claim_analytics"),
+
+    # Compensation Analytics
+    path("compensations/analytics/", compensation_analytics.compensation_summary_dashboard, name="compensation_analytics"),
 ]

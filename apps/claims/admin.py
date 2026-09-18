@@ -1,10 +1,17 @@
 from django.contrib import admin
 
-from .models import Claim
+from .models import Claim, Compensation
 
 
 @admin.register(Claim)
 class ClaimAdmin(admin.ModelAdmin):
+    list_display = ["store", "product", "qty", "created_by", "created_at"]
+    list_filter = ["store", "product"]
+    search_fields = ["store__name", "product__description", "product__barcode"]
+
+
+@admin.register(Compensation)
+class CompensationAdmin(admin.ModelAdmin):
     list_display = ["store", "product", "qty", "created_by", "created_at"]
     list_filter = ["store", "product"]
     search_fields = ["store__name", "product__description", "product__barcode"]

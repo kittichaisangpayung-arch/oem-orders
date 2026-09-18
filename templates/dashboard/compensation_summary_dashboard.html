@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}รายงานชดเชยสินค้า{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card {
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .stat-card h3 {
+        color: #94A3B8;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin: 0 0 0.5rem 0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .stat-card .value {
+        color: #F8FAFC;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .stat-card .subvalue {
+        color: #64748B;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+    .product-card {
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        transition: all 0.2s;
+    }
+    .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border-color: #38BDF8;
+    }
+    .product-card img {
+        width: 60px;
+        height: 60px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: #0F172A;
+    }
+    .product-card .info {
+        flex: 1;
+    }
+    .product-card .barcode {
+        color: #64748B;
+        font-size: 0.75rem;
+        font-family: 'Courier New', monospace;
+    }
+    .product-card .description {
+        color: #F8FAFC;
+        font-weight: 500;
+        margin: 0.25rem 0;
+    }
+    .product-card .stats {
+        color: #38BDF8;
+        font-size: 0.875rem;
+    }
+    .chart-container {
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        height: 300px;
+    }
+    .filter-section {
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .filter-section label {
+        color: #94A3B8;
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+    .filter-section input, .filter-section select {
+        background: #0F172A;
+        border: 1px solid #334155;
+        color: #F8FAFC;
+        padding: 0.5rem;
+        border-radius: 4px;
+        width: 100%;
+    }
+    .filter-section button {
+        background: #38BDF8;
+        color: #0B0E14;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 1rem;
+    }
+    .filter-section button:hover {
+        background: #22D3EE;
+    }
+    table {
+        width: 100%;
+        background: #1E293B;
+        border: 1px solid #334155;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    th {
+        background: #0F172A;
+        color: #94A3B8;
+        padding: 0.75rem;
+        text-align: left;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    td {
+        padding: 0.75rem;
+        color: #F8FAFC;
+        border-top: 1px solid #334155;
+    }
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-success {
+        background: #22C55E20;
+        color: #22C55E;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="padding: 2rem;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 style="color: #F8FAFC; margin: 0;">📊 รายงานชดเชยสินค้า</h1>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <form method="get">
+            <div class="row">
+                <div class="col-md-2">
+                    <label>วันที่เริ่มต้น</label>
+                    <input type="date" name="date_from" value="{{ date_from }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label>วันที่สิ้นสุด</label>
+                    <input type="date" name="date_to" value="{{ date_to }}" class="form-control">
+                </div>
+                <div class="col-md-2">
+                    <label>ลูกค้า</label>
+                    <select name="customer" class="form-control">
+                        <option value="">-- ทั้งหมด --</option>
+                        {% for c in customers %}
+                        <option value="{{ c.id }}" {% if customer_filter == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label>สาขา</label>
+                    <select name="store" class="form-control">
+                        <option value="">-- ทั้งหมด --</option>
+                        {% for s in stores %}
+                        <option value="{{ s.id }}" {% if store_filter == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label>สินค้า</label>
+                    <select name="product" class="form-control">
+                        <option value="">-- ทั้งหมด --</option>
+                        {% for p in products %}
+                        <option value="{{ p.id }}" {% if product_filter == p.id|stringformat:"s" %}selected{% endif %}>{{ p.description }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn w-100">กรอง</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="stat-card">
+                <h3>ยอดชดเชยรวม (ชิ้น)</h3>
+                <p class="value">{{ total_compensations.total_qty|default:0|floatformat:0 }}</p>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="stat-card">
+                <h3>จำนวนครั้งชดเชย</h3>
+                <p class="value">{{ total_compensations.total_count|default:0 }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Trend Chart -->
+    <div class="chart-container">
+        <canvas id="monthlyTrendChart"></canvas>
+    </div>
+
+    <div class="row">
+        <!-- Top 10 Compensated Products -->
+        <div class="col-md-6">
+            <h3 style="color: #F8FAFC; margin-bottom: 1rem;">🔥 Top 10 สินค้าที่ชดเชยมากที่สุด</h3>
+            {% for item in top_products %}
+            <div class="product-card">
+                {% if item.product__image %}
+                <img src="{{ item.product__image.url }}" alt="{{ item.product__description }}">
+                {% else %}
+                <img src="{% static 'placeholder.png' %}" alt="No image">
+                {% endif %}
+                <div class="info">
+                    <div class="barcode">{{ item.product__barcode }}</div>
+                    <div class="description">{{ item.product__description }}</div>
+                    <div class="stats">
+                        <span class="badge badge-success">{{ item.total_qty }} ชิ้น</span>
+                        <span style="color: #64748B; margin-left: 0.5rem;">{{ item.compensation_count }} ครั้ง</span>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color: #64748B;">ไม่มีข้อมูลชดเชย</p>
+            {% endfor %}
+        </div>
+
+        <!-- Recent Compensations -->
+        <div class="col-md-6">
+            <h3 style="color: #F8FAFC; margin-bottom: 1rem;">🕒 ชดเชยล่าสุด</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>วันที่</th>
+                        <th>สินค้า</th>
+                        <th>สาขา</th>
+                        <th>จำนวน</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for comp in recent_compensations %}
+                    <tr>
+                        <td>{{ comp.created_at|date:"Y/m/d H:i" }}</td>
+                        <td>{{ comp.product.description|truncatewords:5 }}</td>
+                        <td>{{ comp.store.name }}</td>
+                        <td><span class="badge badge-success">{{ comp.qty }}</span></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #64748B;">ไม่มีข้อมูลชดเชย</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Monthly Trend Chart
+const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
+const monthlyData = {{ monthly_trend|safe }};
+
+const labels = monthlyData.map(d => {
+    const date = new Date(d.month);
+    return date.toLocaleDateString('th-TH', { year: 'numeric', month: 'short' });
+});
+
+const qtyData = monthlyData.map(d => d.total_qty);
+const countData = monthlyData.map(d => d.compensation_count);
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'จำนวนชิ้น',
+            data: qtyData,
+            borderColor: '#22C55E',
+            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            tension: 0.3,
+            fill: true,
+            yAxisID: 'y'
+        }, {
+            label: 'จำนวนครั้ง',
+            data: countData,
+            borderColor: '#38BDF8',
+            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            tension: 0.3,
+            fill: true,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: {
+                    color: '#F8FAFC'
+                }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#94A3B8' },
+                grid: { color: '#334155' }
+            },
+            y: {
+                type: 'linear',
+                position: 'left',
+                ticks: { color: '#22C55E' },
+                grid: { color: '#334155' }
+            },
+            y1: {
+                type: 'linear',
+                position: 'right',
+                ticks: { color: '#38BDF8' },
+                grid: { display: false }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

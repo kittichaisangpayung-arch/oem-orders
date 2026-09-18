@@ -26,3 +26,26 @@ class Claim(models.Model):
 
     def __str__(self):
         return f"{self.store} / {self.product} x{self.qty}"
+
+
+class Compensation(models.Model):
+    """A store receives compensation for a given product quantity, tied to
+    the PurchaseOrder. Compensations ADD to the PO quantity when computing
+    the net production total sent to the factory -- the store needs the
+    originally ordered amount PLUS the compensation amount."""
+
+    purchase_order = models.ForeignKey(
+        "ingestion.PurchaseOrder", on_delete=models.SET_NULL, null=True, blank=True, related_name="compensations"
+    )
+    store = models.ForeignKey(Store, on_delete=models.PROTECT, related_name="compensations")
+    product = models.ForeignKey(Product, on_delete=models.PROTECT, related_name="compensations")
+    qty = models.PositiveIntegerField()
+    note = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.store} / {self.product} x{self.qty}"
