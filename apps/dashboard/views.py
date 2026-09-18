@@ -812,8 +812,27 @@ def shipping_summary(request):
     products = {}
     matrix = defaultdict(dict)
 
-    # Load all active products
-    all_products = Product.objects.filter(is_active=True)
+    # Load products based on customer filter
+    if selected_customer:
+        # If customer is selected, only show products that have orders or have CustomerProduct entries
+        from apps.core.models import CustomerProduct
+
+        # Get products from orders
+        ordered_product_ids = set(qs.values_list('product_id', flat=True).distinct())
+
+        # Get products with customer-specific settings
+        customer_product_ids = set(
+            CustomerProduct.objects.filter(customer=selected_customer)
+            .values_list('product_id', flat=True)
+        )
+
+        # Combine both sets
+        relevant_product_ids = ordered_product_ids | customer_product_ids
+        all_products = Product.objects.filter(is_active=True, id__in=relevant_product_ids)
+    else:
+        # No customer filter - show all active products
+        all_products = Product.objects.filter(is_active=True)
+
     for product in all_products:
         # Use customer-specific barcode if available
         effective_barcode = customer_barcodes.get(product.id) or product.barcode or "(unmapped)"
