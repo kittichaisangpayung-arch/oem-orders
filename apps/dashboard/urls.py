@@ -18,6 +18,7 @@ urlpatterns = [
     path("delivery-notes/create/<int:batch_id>/", views.create_delivery_notes_from_batch, name="create_delivery_notes"),
     path("delivery-notes/<int:dn_id>/", views.delivery_note_detail, name="delivery_note_detail"),
     path("delivery-notes/<int:dn_id>/confirm/", views.confirm_delivery_note, name="confirm_delivery_note"),
+    path("delivery-notes/<int:dn_id>/mark-delivered/", views.mark_delivered, name="mark_delivered"),
     path("delivery-notes/<int:dn_id>/delete/", views.delete_delivery_note, name="delete_delivery_note"),
     path("invoices/", views.invoice_list, name="invoice_list"),
     path("invoices/create/", views.create_invoice, name="create_invoice"),

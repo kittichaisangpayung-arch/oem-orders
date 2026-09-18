@@ -1279,6 +1279,23 @@ def confirm_delivery_note(request, dn_id):
 
 
 @login_required
+def mark_delivered(request, dn_id):
+    """Mark delivery note as delivered"""
+    if request.method != "POST":
+        return redirect("dashboard:delivery_note_detail", dn_id=dn_id)
+
+    dn = get_object_or_404(DeliveryNote, pk=dn_id)
+
+    if dn.status == DeliveryNote.Status.CONFIRMED:
+        from django.utils import timezone
+        dn.status = DeliveryNote.Status.DELIVERED
+        dn.delivered_at = timezone.now()
+        dn.save(update_fields=["status", "delivered_at"])
+
+    return redirect("dashboard:delivery_note_detail", dn_id=dn.id)
+
+
+@login_required
 def delete_delivery_note(request, dn_id):
     """Delete a delivery note"""
     if request.method != "POST":

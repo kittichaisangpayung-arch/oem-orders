@@ -14,6 +14,12 @@
             <button type="submit" style="background:#28a745; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">✓ Confirm</button>
         </form>
         {% endif %}
+        {% if dn.status == 'CONFIRMED' %}
+        <form method="post" action="{% url 'dashboard:mark_delivered' dn.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('ยืนยันว่าส่งสินค้าแล้ว?');">
+            {% csrf_token %}
+            <button type="submit" style="background:#007bff; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">📦 Mark as Delivered</button>
+        </form>
+        {% endif %}
         <form method="post" action="{% url 'dashboard:delete_delivery_note' dn.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Delivery Note นี้?');">
             {% csrf_token %}
             <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🗑️ ลบ</button>

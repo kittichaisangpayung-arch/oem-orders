@@ -109,6 +109,14 @@
                                 Confirm
                             </button>
                         </form>
+                    {% elif dn.status == 'CONFIRMED' %}
+                        <form method="post" action="{% url 'dashboard:mark_delivered' dn.pk %}" style="display: inline;"
+                              onsubmit="return confirm('ยืนยันว่าส่งสินค้าแล้ว?')">
+                            {% csrf_token %}
+                            <button type="submit" style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">
+                                Mark Delivered
+                            </button>
+                        </form>
                     {% endif %}
 
                     <form method="post" action="{% url 'dashboard:delete_delivery_note' dn.pk %}" style="display: inline;"
