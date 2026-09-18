@@ -123,6 +123,12 @@ python manage.py check
 - `apps/core/models.py` - เพิ่ม get_products_for_customer()
 - `apps/core/admin.py` - ปรับปรุง CustomerProductAdmin
 - `apps/ingestion/services.py` - รองรับ customer barcode แล้ว (ไม่ต้องแก้เพิ่ม)
+- `apps/dashboard/views.py` - อัปเดตทุก view ให้แสดง customer-specific barcode:
+  - `production_summary()` - แสดง barcode ตาม customer
+  - `store_matrix()` - แสดง barcode ตาม customer
+  - `factory_summary()` - แสดง barcode ตาม customer
+  - `shipping_summary()` - แสดง barcode ตาม customer
+  - `create_delivery_notes_from_batch()` - สร้าง delivery note ด้วย customer barcode
 
 ## 💡 Tips
 

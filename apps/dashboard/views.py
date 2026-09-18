@@ -196,6 +196,30 @@ def _claimed_totals(request):
 def production_summary(request):
     qs = _filter_line_items(request)
 
+    # Get customer_id from filter
+    customer_id = request.GET.get("customer")
+    batch_id = request.GET.get("batch")
+
+    # If batch is selected, get customer from batch
+    selected_customer = None
+    if batch_id:
+        batch = PurchaseOrderBatch.objects.filter(pk=batch_id).first()
+        if batch:
+            selected_customer = batch.customer
+    elif customer_id:
+        selected_customer = Customer.objects.filter(pk=customer_id).first()
+
+    # Get customer-specific barcodes if customer is selected
+    customer_barcodes = {}
+    if selected_customer:
+        from apps.core.models import CustomerProduct
+        cp_list = CustomerProduct.objects.filter(
+            customer=selected_customer
+        ).select_related('product')
+        for cp in cp_list:
+            if cp.barcode_override:
+                customer_barcodes[cp.product_id] = cp.barcode_override
+
     # Build matrix like store_matrix to calculate adjusted quantities per store
     rows = qs.values(
         "product__id", "product__barcode", "product__description",
@@ -213,9 +237,12 @@ def production_summary(request):
         stores.add(store_id)
 
         if product_id not in products:
+            # Use customer-specific barcode if available
+            effective_barcode = customer_barcodes.get(product_id) or row["product__barcode"] or "(unmapped)"
+
             products[product_id] = {
                 "id": product_id,
-                "barcode": row["product__barcode"] or "(unmapped)",
+                "barcode": effective_barcode,
                 "description": row["product__description"] or "",
                 "sort_rank": row["product__sort_rank"],
                 "min_order_qty": row["product__min_order_qty"] or 0,
@@ -232,9 +259,12 @@ def production_summary(request):
         if pid is not None and pid not in products:
             product = Product.objects.filter(pk=pid).first()
             if product:
+                # Use customer-specific barcode if available
+                effective_barcode = customer_barcodes.get(pid) or product.barcode
+
                 products[pid] = {
                     "id": pid,
-                    "barcode": product.barcode,
+                    "barcode": effective_barcode,
                     "description": product.description,
                     "sort_rank": product.sort_rank,
                     "min_order_qty": product.min_order_qty or 0,
@@ -307,6 +337,19 @@ def production_summary(request):
 def store_matrix(request):
     qs = _filter_line_items(request)
 
+    # Get customer_id from filter
+    customer_id = request.GET.get("customer")
+    batch_id = request.GET.get("batch")
+
+    # If batch is selected, get customer from batch
+    selected_customer = None
+    if batch_id:
+        batch = PurchaseOrderBatch.objects.filter(pk=batch_id).first()
+        if batch:
+            selected_customer = batch.customer
+    elif customer_id:
+        selected_customer = Customer.objects.filter(pk=customer_id).first()
+
     rows = qs.values(
         "product__id", "product__barcode", "product__description",
         "product__sort_rank", "product__min_order_qty", "product__image",
@@ -322,6 +365,17 @@ def store_matrix(request):
     matrix = defaultdict(dict)
     price_matrix = defaultdict(dict)
 
+    # Get customer-specific barcodes if customer is selected
+    customer_barcodes = {}
+    if selected_customer:
+        from apps.core.models import CustomerProduct
+        cp_list = CustomerProduct.objects.filter(
+            customer=selected_customer
+        ).select_related('product')
+        for cp in cp_list:
+            if cp.barcode_override:
+                customer_barcodes[cp.product_id] = cp.barcode_override
+
     for row in rows:
         store_id = row["purchase_order__store__id"]
         store_name = row["purchase_order__store__name"] or "(Unmapped store)"
@@ -331,9 +385,12 @@ def store_matrix(request):
             stores[store_id] = store_name
 
         if product_id not in products:
+            # Use customer-specific barcode if available
+            effective_barcode = customer_barcodes.get(product_id) or row["product__barcode"] or "(unmapped)"
+
             products[product_id] = {
                 "id": product_id,
-                "barcode": row["product__barcode"] or "(unmapped)",
+                "barcode": effective_barcode,
                 "description": row["product__description"] or "",
                 "sort_rank": row["product__sort_rank"],
                 "min_order_qty": row["product__min_order_qty"] or 0,
@@ -370,9 +427,12 @@ def store_matrix(request):
         if pid is not None and pid not in products:
             product = Product.objects.filter(pk=pid).first()
             if product:
+                # Use customer-specific barcode if available
+                effective_barcode = customer_barcodes.get(pid) or product.barcode
+
                 products[pid] = {
                     "id": pid,
-                    "barcode": product.barcode,
+                    "barcode": effective_barcode,
                     "description": product.description,
                     "sort_rank": product.sort_rank,
                     "min_order_qty": product.min_order_qty or 0,
@@ -551,6 +611,30 @@ def factory_summary(request):
     """Production summary grouped by product group."""
     qs = _filter_line_items(request)
 
+    # Get customer_id from filter
+    customer_id = request.GET.get("customer")
+    batch_id = request.GET.get("batch")
+
+    # If batch is selected, get customer from batch
+    selected_customer = None
+    if batch_id:
+        batch = PurchaseOrderBatch.objects.filter(pk=batch_id).first()
+        if batch:
+            selected_customer = batch.customer
+    elif customer_id:
+        selected_customer = Customer.objects.filter(pk=customer_id).first()
+
+    # Get customer-specific barcodes if customer is selected
+    customer_barcodes = {}
+    if selected_customer:
+        from apps.core.models import CustomerProduct
+        cp_list = CustomerProduct.objects.filter(
+            customer=selected_customer
+        ).select_related('product')
+        for cp in cp_list:
+            if cp.barcode_override:
+                customer_barcodes[cp.product_id] = cp.barcode_override
+
     # Filter by product group if specified
     group_filter = request.GET.get("group")
     if group_filter:
@@ -578,9 +662,12 @@ def factory_summary(request):
         stores.add(store_id)
 
         if product_id not in products:
+            # Use customer-specific barcode if available
+            effective_barcode = customer_barcodes.get(product_id) or row["product__barcode"] or "(unmapped)"
+
             products[product_id] = {
                 "id": product_id,
-                "barcode": row["product__barcode"],
+                "barcode": effective_barcode,
                 "description": row["product__description"],
                 "sort_rank": row["product__sort_rank"],
                 "product_group": row["product__product_group"],
@@ -598,9 +685,12 @@ def factory_summary(request):
         if pid is not None and pid not in products:
             product = Product.objects.filter(pk=pid).first()
             if product:
+                # Use customer-specific barcode if available
+                effective_barcode = customer_barcodes.get(pid) or product.barcode
+
                 products[pid] = {
                     "id": pid,
-                    "barcode": product.barcode,
+                    "barcode": effective_barcode,
                     "description": product.description,
                     "sort_rank": product.sort_rank,
                     "product_group": product.product_group,
@@ -687,15 +777,35 @@ def shipping_summary(request):
     """Shipping summary table showing all stores and products for logistics department"""
     qs = _filter_line_items(request)
 
+    # Get filter parameters
+    batch_id = request.GET.get("batch")
+    customer_id = request.GET.get("customer")
+
+    # Get selected customer
+    selected_customer = None
+    if batch_id:
+        batch = PurchaseOrderBatch.objects.filter(pk=batch_id).first()
+        if batch:
+            selected_customer = batch.customer
+    elif customer_id:
+        selected_customer = Customer.objects.filter(pk=customer_id).first()
+
+    # Get customer-specific barcodes if customer is selected
+    customer_barcodes = {}
+    if selected_customer:
+        from apps.core.models import CustomerProduct
+        cp_list = CustomerProduct.objects.filter(
+            customer=selected_customer
+        ).select_related('product')
+        for cp in cp_list:
+            if cp.barcode_override:
+                customer_barcodes[cp.product_id] = cp.barcode_override
+
     rows = qs.values(
         "product__id", "product__barcode", "product__description",
         "product__sort_rank", "product__min_order_qty", "product__image",
         "purchase_order__store__id", "purchase_order__store__name",
     ).annotate(total_qty2=Sum("qty2"), total_line_amount=Sum("line_total"))
-
-    # Get filter parameters
-    batch_id = request.GET.get("batch")
-    customer_id = request.GET.get("customer")
 
     # Initialize stores and products dictionaries
     stores = {}
@@ -705,9 +815,12 @@ def shipping_summary(request):
     # Load all active products
     all_products = Product.objects.filter(is_active=True)
     for product in all_products:
+        # Use customer-specific barcode if available
+        effective_barcode = customer_barcodes.get(product.id) or product.barcode or "(unmapped)"
+
         products[product.id] = {
             "id": product.id,
-            "barcode": product.barcode or "(unmapped)",
+            "barcode": effective_barcode,
             "description": product.description or "",
             "sort_rank": product.sort_rank,
             "min_order_qty": product.min_order_qty or 0,
@@ -906,6 +1019,20 @@ def create_delivery_notes_from_batch(request, batch_id):
 
     batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
 
+    # Detect customer from batch
+    selected_customer = batch.customer if hasattr(batch, 'customer') and batch.customer else None
+
+    # Load customer-specific barcode overrides
+    customer_barcodes = {}
+    if selected_customer:
+        from apps.core.models import CustomerProduct
+        cp_list = CustomerProduct.objects.filter(
+            customer=selected_customer
+        ).select_related('product')
+        for cp in cp_list:
+            if cp.barcode_override:
+                customer_barcodes[cp.product_id] = cp.barcode_override
+
     # Get all store quantities from the batch
     qs = POLineItem.objects.filter(purchase_order__batch=batch)
 
@@ -932,10 +1059,11 @@ def create_delivery_notes_from_batch(request, batch_id):
             stores[store_id] = Store.objects.get(pk=store_id)
 
         if product_id not in products:
+            effective_barcode = customer_barcodes.get(product_id) or row["product__barcode"]
             products[product_id] = {
                 "id": product_id,
                 "sort_rank": row["product__sort_rank"],
-                "barcode": row["product__barcode"],
+                "barcode": effective_barcode,
                 "min_order_qty": row["product__min_order_qty"] or 0,
             }
 
