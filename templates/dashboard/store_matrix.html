@@ -58,66 +58,67 @@
         <button type="submit">กรอง</button>
     </form>
 
-    <table>
+    <div style="overflow-x: auto;">
+    <table style="min-width: 100%; white-space: nowrap;">
         <thead>
             <tr>
-                <th class="label" rowspan="2">รูป</th>
-                <th class="label" rowspan="2">Barcode</th>
-                <th class="label" rowspan="2">รายการสินค้า</th>
+                <th class="label" rowspan="2" style="position:sticky; left:0; background:linear-gradient(135deg, var(--pink-light), var(--purple-light)); z-index:3; min-width:50px;">รูป</th>
+                <th class="label" rowspan="2" style="position:sticky; left:50px; background:linear-gradient(135deg, var(--pink-light), var(--purple-light)); z-index:3; min-width:100px;">Barcode</th>
+                <th class="label" rowspan="2" style="position:sticky; left:150px; background:linear-gradient(135deg, var(--pink-light), var(--purple-light)); z-index:3; min-width:200px;">รายการสินค้า</th>
                 {% for store_name in store_names %}
-                    <th colspan="3">{{ store_name }}</th>
+                    <th colspan="3" style="min-width:180px;">{{ store_name }}</th>
                 {% endfor %}
                 {% if single_batch_id %}
-                    <th rowspan="2" style="background:#fff3cd;">เคลม</th>
-                    <th rowspan="2" style="background:#e8f5e9;">ชดเชย</th>
+                    <th rowspan="2" style="background:#fff3cd; min-width:80px;">เคลม</th>
+                    <th rowspan="2" style="background:#e8f5e9; min-width:80px;">ชดเชย</th>
                 {% endif %}
             </tr>
             <tr>
                 {% for store_name in store_names %}
-                    <th style="font-size:11px; background:#f8f9fa;">สั่ง</th>
-                    <th style="font-size:11px; background:#ffe0e0;">เคลม</th>
-                    <th style="font-size:11px; background:#e0f5e0;">ชดเชย</th>
+                    <th style="font-size:11px; background:#f8f9fa; min-width:60px;">สั่ง</th>
+                    <th style="font-size:11px; background:#ffe0e0; min-width:60px;">เคลม</th>
+                    <th style="font-size:11px; background:#e0f5e0; min-width:60px;">ชดเชย</th>
                 {% endfor %}
             </tr>
         </thead>
         <tbody>
         {% for row in table_rows %}
             <tr>
-                <td class="label" style="text-align:center; padding:4px;">
+                <td class="label" style="text-align:center; padding:4px; position:sticky; left:0; background:#fff; z-index:2;">
                     {% if row.product.image %}
                         <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
                     {% else %}
                         <span style="color:#ccc;">-</span>
                     {% endif %}
                 </td>
-                <td class="label">{{ row.product.barcode }}</td>
-                <td class="label">{{ row.product.description }}</td>
+                <td class="label" style="position:sticky; left:50px; background:#fff; z-index:2; font-size:12px;">{{ row.product.barcode }}</td>
+                <td class="label" style="position:sticky; left:150px; background:#fff; z-index:2; font-size:13px; max-width:200px; overflow:hidden; text-overflow:ellipsis;">{{ row.product.description }}</td>
                 {% for cell in row.cells %}
                     <td class="{% if cell.overridden %}overridden{% elif cell.adjusted %}below-min{% endif %}"
-                        style="text-align:right; {% if single_batch_id and can_override %}cursor:pointer;{% endif %}"
+                        style="text-align:center; min-width:60px; {% if single_batch_id and can_override %}cursor:pointer;{% endif %}"
                         {% if single_batch_id and can_override %}
                         onclick="showOverrideModal({{ cell.product_id }}, {{ cell.store_id }}, {{ cell.qty }}, '{{ row.product.barcode }}', '{{ row.product.description|escapejs }}')"
                         title="คลิกเพื่อแก้ไขยอด"
                         {% endif %}>
                         {{ cell.qty }}
                     </td>
-                    <td style="text-align:right; background:#fff0f0; {% if cell.claimed_qty > 0 %}color:#dc3545; font-weight:bold;{% endif %}">
+                    <td style="text-align:center; background:#fff0f0; min-width:60px; {% if cell.claimed_qty > 0 %}color:#dc3545; font-weight:bold;{% endif %}">
                         {{ cell.claimed_qty|default:"0" }}
                     </td>
-                    <td style="text-align:right; background:#f0fff0; {% if cell.compensated_qty > 0 %}color:#22c55e; font-weight:bold;{% endif %}">
+                    <td style="text-align:center; background:#f0fff0; min-width:60px; {% if cell.compensated_qty > 0 %}color:#22c55e; font-weight:bold;{% endif %}">
                         {{ cell.compensated_qty|default:"0" }}
                     </td>
                 {% endfor %}
                 {% if single_batch_id %}
-                    <td style="background:#fffef0;">
+                    <td style="background:#fffef0; text-align:center;">
                         <button onclick="showClaimModal({{ row.product.id }}, '{{ row.product.barcode }}', '{{ row.product.description|escapejs }}')"
-                                style="background:#ffc107; color:#000; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
+                                style="background:#ffc107; color:#000; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; white-space:nowrap;">
                             + เคลม
                         </button>
                     </td>
-                    <td style="background:#f0fff0;">
+                    <td style="background:#f0fff0; text-align:center;">
                         <button onclick="showCompensationModal({{ row.product.id }}, '{{ row.product.barcode }}', '{{ row.product.description|escapejs }}')"
-                                style="background:#22c55e; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">
+                                style="background:#22c55e; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; white-space:nowrap;">
                             + ชดเชย
                         </button>
                     </td>
@@ -126,6 +127,7 @@
         {% endfor %}
         </tbody>
     </table>
+    </div>
     <p style="margin-top:8px; font-size: 13px; color: #666;">ยอดในตารางรวมยอดเคลม/ชดเชยเข้าไปแล้ว (ยอดสั่ง - เคลม + ชดเชย) ช่องสีแดง = ยอดสุทธิต่ำกว่าขั้นต่ำของสินค้านั้น ระบบปรับยอดขึ้นเป็นขั้นต่ำให้อัตโนมัติ ช่องสีน้ำเงิน = ยอดที่ admin ปรับเองแล้ว {% if not single_batch_id %}(เลือก Batch เดียวเพื่อแก้ไขยอดเอง){% endif %}</p>
 </div>
 
