@@ -14,6 +14,7 @@ urlpatterns = [
     path("stores/", views.store_matrix, name="store_matrix"),
     path("stores/override/", views.set_override, name="set_override"),
     path("stores/add-claim/", views.add_claim_inline, name="add_claim_inline"),
+    path("stores/add-compensation/", views.add_compensation_inline, name="add_compensation_inline"),
     path("factory/", views.factory_summary, name="factory_summary"),
     path("shipping/", views.shipping_summary, name="shipping_summary"),
     path("delivery-notes/", views.delivery_note_list, name="delivery_note_list"),

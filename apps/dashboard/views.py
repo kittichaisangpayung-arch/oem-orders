@@ -7,7 +7,7 @@ from django.db.models import Sum, Count, Q
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 
-from apps.claims.models import Claim
+from apps.claims.models import Claim, Compensation
 from apps.core.access import staff_required
 from apps.core.models import Customer, Factory, Product, Store
 from apps.ingestion.models import POLineItem, PurchaseOrder, PurchaseOrderBatch
@@ -175,11 +175,51 @@ def _filter_claims(request):
     return qs
 
 
+def _filter_compensations(request):
+    qs = Compensation.objects.filter(purchase_order__isnull=False)
+
+    batch_id = request.GET.get("batch")
+    customer_id = request.GET.get("customer")
+    store_id = request.GET.get("store")
+    date_from = request.GET.get("date_from")
+    date_to = request.GET.get("date_to")
+
+    if batch_id:
+        qs = qs.filter(purchase_order__batch_id=batch_id)
+    if customer_id:
+        qs = qs.filter(purchase_order__customer_id=customer_id)
+    if store_id:
+        qs = qs.filter(purchase_order__store_id=store_id)
+    if date_from:
+        qs = qs.filter(purchase_order__batch__uploaded_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(purchase_order__batch__uploaded_at__date__lte=date_to)
+
+    return qs
+
+
 def _claimed_totals(request):
     """Returns (by_product, by_product_store) claimed-qty maps for the same
     filter params as _filter_line_items, so claims can be netted against
     production totals before they're sent to the factory."""
     qs = _filter_claims(request)
+
+    by_product = defaultdict(int)
+    for row in qs.values("product_id").annotate(total=Sum("qty")):
+        by_product[row["product_id"]] += row["total"] or 0
+
+    by_product_store = defaultdict(int)
+    for row in qs.values("product_id", "store_id").annotate(total=Sum("qty")):
+        by_product_store[(row["product_id"], row["store_id"])] += row["total"] or 0
+
+    return by_product, by_product_store
+
+
+def _compensation_totals(request):
+    """Returns (by_product, by_product_store) compensation-qty maps for the same
+    filter params as _filter_line_items, so compensations can be added to
+    production totals."""
+    qs = _filter_compensations(request)
 
     by_product = defaultdict(int)
     for row in qs.values("product_id").annotate(total=Sum("qty")):
@@ -416,6 +456,7 @@ def store_matrix(request):
         store_money[store_id] = row["total_amount"] or 0
 
     _, claimed_by_product_store = _claimed_totals(request)
+    _, compensation_by_product_store = _compensation_totals(request)
 
     # A claim can turn a never-ordered product/store pair into a real qty --
     # make sure such pairs still surface as a row/column even if no
@@ -461,7 +502,8 @@ def store_matrix(request):
         for sid in sorted_store_ids:
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed
+            compensated = compensation_by_product_store.get((pid, sid), 0)
+            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
             unit_price = price_matrix[pid].get(sid, 0)
 
@@ -493,6 +535,7 @@ def store_matrix(request):
                 "qty": display_qty,
                 "original_qty": qty,
                 "claimed_qty": claimed,
+                "compensated_qty": compensated,
                 "adjusted": adjusted,
                 "overridden": overridden,
                 "product_id": pid,
@@ -604,6 +647,46 @@ def add_claim_inline(request):
             traceback.print_exc()
 
     return redirect(f"{reverse('dashboard:store_matrix')}?batch={batch_id}")
+
+
+@login_required
+def add_compensation_inline(request):
+    """Add compensation directly from store matrix table."""
+    if request.method != "POST":
+        return redirect("dashboard:store_matrix")
+
+    batch_id = request.POST.get("batch")
+    product_id = request.POST.get("product_id")
+    store_id = request.POST.get("store_id")
+    compensation_qty = request.POST.get("compensation_qty")
+
+    if batch_id and product_id and store_id and compensation_qty:
+        try:
+            from apps.claims.models import Compensation
+
+            compensation_qty = int(compensation_qty)
+
+            if compensation_qty > 0:
+                # Get ANY purchase order for this batch and store
+                po = PurchaseOrder.objects.filter(
+                    batch_id=batch_id,
+                    store_id=store_id
+                ).first()
+
+                if po:
+                    Compensation.objects.create(
+                        purchase_order=po,
+                        store_id=store_id,
+                        product_id=product_id,
+                        qty=compensation_qty,
+                        note=f"Added from store matrix (batch #{batch_id})",
+                        created_by=request.user,
+                    )
+        except Exception as e:
+            print(f"Error adding compensation: {type(e).__name__}: {e}")
+
+    return redirect(f"{reverse('dashboard:store_matrix')}?batch={batch_id}")
+
 
 
 @login_required
