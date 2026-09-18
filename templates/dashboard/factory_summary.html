@@ -51,7 +51,8 @@
                     <th class="label">Barcode</th>
                     <th class="label">รายการสินค้า</th>
                     <th>ยอดสั่งรวม (Qty2)</th>
-                    <th>เคลม</th>
+                    <th style="background:#ffe0e0;">เคลม</th>
+                    <th style="background:#e0f5e0;">ชดเชย</th>
                     <th>ยอดผลิตสุทธิ</th>
                 </tr>
             </thead>
@@ -68,7 +69,8 @@
                     <td class="label">{{ product.barcode|default:"(unmapped)" }}</td>
                     <td class="label">{{ product.description }}</td>
                     <td>{{ product.total_qty2 }}</td>
-                    <td>{{ product.claimed_qty }}</td>
+                    <td style="{% if product.claimed_qty > 0 %}color:#dc3545; font-weight:bold;{% endif %}">{{ product.claimed_qty }}</td>
+                    <td style="{% if product.compensated_qty > 0 %}color:#22c55e; font-weight:bold;{% endif %}">{{ product.compensated_qty|default:0 }}</td>
                     <td><strong>{{ product.net_qty2 }}</strong></td>
                 </tr>
             {% endfor %}

@@ -317,19 +317,41 @@ def production_summary(request):
         for o in StoreProductOverride.objects.filter(purchase_order_batch_id=single_batch_id):
             overrides[(o.product_id, o.store_id)] = o.override_qty
 
+    compensated_by_product, compensated_by_product_store = _compensation_totals(request)
+
+    # Check for compensations that create new product/store pairs
+    for pid, sid in compensated_by_product_store:
+        stores.add(sid)
+        if pid is not None and pid not in products:
+            product = Product.objects.filter(pk=pid).first()
+            if product:
+                # Use customer-specific barcode if available
+                effective_barcode = customer_barcodes.get(pid) or product.barcode
+
+                products[pid] = {
+                    "id": pid,
+                    "barcode": effective_barcode,
+                    "description": product.description,
+                    "sort_rank": product.sort_rank,
+                    "min_order_qty": product.min_order_qty or 0,
+                    "image": product.image.url if product.image else None,
+                }
+
     # Calculate totals per product, applying min qty and overrides per store
     totals = []
     for pid, p in products.items():
         original_total = 0
         adjusted_total = 0
         claimed_total = claimed_by_product.get(pid, 0)
+        compensated_total = compensated_by_product.get(pid, 0)
         has_override = False
         has_adjustment = False
 
         for sid in stores:
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed
+            compensated = compensated_by_product_store.get((pid, sid), 0)
+            net_qty = qty - claimed + compensated
             minimum = p["min_order_qty"]
 
             original_total += qty
@@ -353,6 +375,7 @@ def production_summary(request):
             "product__image": p["image"],
             "original_qty": original_total,
             "claimed_qty": claimed_total,
+            "compensated_qty": compensated_total,
             "net_qty2": adjusted_total,
             "overridden": has_override,
             "adjusted": has_adjustment,
@@ -761,9 +784,29 @@ def factory_summary(request):
         matrix[product_id][store_id] = row["total_qty2"]
 
     claimed_by_product, claimed_by_product_store = _claimed_totals(request)
+    compensated_by_product, compensated_by_product_store = _compensation_totals(request)
 
     # Check for claims that create new product/store pairs
     for pid, sid in claimed_by_product_store:
+        stores.add(sid)
+        if pid is not None and pid not in products:
+            product = Product.objects.filter(pk=pid).first()
+            if product:
+                # Use customer-specific barcode if available
+                effective_barcode = customer_barcodes.get(pid) or product.barcode
+
+                products[pid] = {
+                    "id": pid,
+                    "barcode": effective_barcode,
+                    "description": product.description,
+                    "sort_rank": product.sort_rank,
+                    "product_group": product.product_group,
+                    "min_order_qty": product.min_order_qty or 0,
+                    "image": product.image.url if product.image else None,
+                }
+
+    # Check for compensations that create new product/store pairs
+    for pid, sid in compensated_by_product_store:
         stores.add(sid)
         if pid is not None and pid not in products:
             product = Product.objects.filter(pk=pid).first()
@@ -794,11 +837,13 @@ def factory_summary(request):
         original_total = 0
         adjusted_total_before_claim = 0
         claimed_total = claimed_by_product.get(pid, 0)
+        compensated_total = compensated_by_product.get(pid, 0)
 
         for sid in stores:
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed
+            compensated = compensated_by_product_store.get((pid, sid), 0)
+            net_qty = qty - claimed + compensated
             minimum = p["min_order_qty"]
 
             original_total += qty
@@ -813,8 +858,8 @@ def factory_summary(request):
             else:
                 adjusted_total_before_claim += qty
 
-        # Final net qty = adjusted order qty + claims
-        final_net_qty = adjusted_total_before_claim + claimed_total
+        # Final net qty = adjusted order qty - claims + compensations
+        final_net_qty = adjusted_total_before_claim - claimed_total + compensated_total
 
         group_name = p["product_group"] or "ไม่ระบุกลุ่ม"
 
@@ -825,7 +870,8 @@ def factory_summary(request):
             "image": p["image"],
             "total_qty2": adjusted_total_before_claim,  # Adjusted order qty (after min adjustment)
             "claimed_qty": claimed_total,
-            "net_qty2": final_net_qty,  # Adjusted + claims
+            "compensated_qty": compensated_total,
+            "net_qty2": final_net_qty,  # Adjusted - claims + compensations
         }
 
         groups_data[group_name]["group_name"] = group_name
@@ -954,9 +1000,17 @@ def shipping_summary(request):
             matrix[product_id][store_id] = qty
 
     _, claimed_by_product_store = _claimed_totals(request)
+    _, compensated_by_product_store = _compensation_totals(request)
 
     # Add stores from claims that might not be in the initial store list
     for pid, sid in claimed_by_product_store:
+        if sid is not None and sid not in stores:
+            store = Store.objects.filter(pk=sid).first()
+            if store and store.is_active:
+                stores[sid] = store.name
+
+    # Add stores from compensations that might not be in the initial store list
+    for pid, sid in compensated_by_product_store:
         if sid is not None and sid not in stores:
             store = Store.objects.filter(pk=sid).first()
             if store and store.is_active:
@@ -977,17 +1031,20 @@ def shipping_summary(request):
     table_rows = []
     store_totals = defaultdict(int)
     store_claim_totals = defaultdict(int)
+    store_compensation_totals = defaultdict(int)
 
     for pid in sorted_product_ids:
         p = products[pid]
         cells = []
         row_total = 0
         row_claim_total = 0
+        row_compensation_total = 0
 
         for sid in sorted_store_ids:
             qty = matrix[pid].get(sid, 0)  # Will be 0 if not ordered
             claimed = claimed_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed
+            compensated = compensated_by_product_store.get((pid, sid), 0)
+            net_qty = qty - claimed + compensated
             minimum = p["min_order_qty"]
 
             # Calculate display_qty for ORDER column (not including claims in display)
@@ -1001,9 +1058,9 @@ def shipping_summary(request):
                 # If qty=0 (not ordered), show 0 even if there are claims
                 display_qty = qty
 
-            # Calculate net for production total (order + claims, with minimum applied)
+            # Calculate net for production total (order - claims + compensations, with minimum applied)
             if overridden:
-                net_for_total = overrides[(pid, sid)] + claimed
+                net_for_total = overrides[(pid, sid)] - claimed + compensated
             elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
                 net_for_total = minimum
             else:
@@ -1012,11 +1069,14 @@ def shipping_summary(request):
             cells.append({
                 'qty': display_qty,  # Order qty only, with minimum if ordered
                 'claimed': claimed,
+                'compensated': compensated,
             })
             row_total += net_for_total
             row_claim_total += claimed
+            row_compensation_total += compensated
             store_totals[sid] += net_for_total
             store_claim_totals[sid] += claimed
+            store_compensation_totals[sid] += compensated
 
         # Add row even if row_total is 0 to show all products
         table_rows.append({
@@ -1024,11 +1084,13 @@ def shipping_summary(request):
             "cells": cells,
             "row_total": row_total,
             "row_claim_total": row_claim_total,
+            "row_compensation_total": row_compensation_total,
         })
 
     # Calculate grand total
     grand_total = sum(store_totals.values())
     grand_claim_total = sum(store_claim_totals.values())
+    grand_compensation_total = sum(store_compensation_totals.values())
 
     # Prepare store columns with totals for easier template iteration
     store_columns = [
@@ -1036,6 +1098,7 @@ def shipping_summary(request):
             "name": stores[sid],
             "total": store_totals[sid],
             "claim_total": store_claim_totals[sid],
+            "compensation_total": store_compensation_totals[sid],
         }
         for sid in sorted_store_ids
     ]
@@ -1046,6 +1109,7 @@ def shipping_summary(request):
         "table_rows": table_rows,
         "grand_total": grand_total,
         "grand_claim_total": grand_claim_total,
+        "grand_compensation_total": grand_compensation_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
         "stores": Store.objects.filter(is_active=True),
