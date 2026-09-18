@@ -1,94 +1,155 @@
 {% extends "base.html" %}
 {% load humanize %}
 
-{% block title %}Product Trends - Analysis{% endblock %}
+{% block title %}แนวโน้มสินค้า{% endblock %}
 
 {% block content %}
+<style>
+.product-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.2s;
+    height: 100%;
+}
+.product-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+.product-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid #f0f0f0;
+}
+.product-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 12px 0 4px 0;
+    line-height: 1.3;
+}
+.product-barcode {
+    font-size: 11px;
+    color: #7f8c8d;
+    font-family: monospace;
+}
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.stat-row:last-child {
+    border-bottom: none;
+}
+.stat-label {
+    font-size: 13px;
+    color: #7f8c8d;
+}
+.stat-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+.stat-value.highlight {
+    color: #3498db;
+    font-size: 18px;
+}
+.trend-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.trend-up { background: #d4edda; color: #155724; }
+.trend-down { background: #f8d7da; color: #721c24; }
+.trend-stable { background: #d1ecf1; color: #0c5460; }
+.filter-bar {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+</style>
+
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Product Trend Analysis</h2>
-
-        <!-- Time Range Filter -->
-        <div class="btn-group" role="group">
-            <a href="?months=3" class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 Months</a>
-            <a href="?months=6" class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
-            <a href="?months=12" class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
-        </div>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📊 แนวโน้มสินค้า</h2>
     </div>
 
-    <div class="alert alert-info">
-        Showing data from <strong>{{ start_date|date:"M d, Y" }}</strong> to <strong>{{ end_date|date:"M d, Y" }}</strong>
-    </div>
-
-    <!-- Product List Table -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">Products Overview ({{ product_stats|length }} products)</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Product</th>
-                            <th>Barcode</th>
-                            <th class="text-end">Total Qty</th>
-                            <th class="text-end">Total Value</th>
-                            <th class="text-center">Order Count</th>
-                            <th class="text-end">Avg Price</th>
-                            <th>Last Order</th>
-                            <th class="text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in product_stats %}
-                        <tr>
-                            <td>
-                                {% if stat.product.image %}
-                                <img src="{{ stat.product.image.url }}" alt="{{ stat.product.description }}"
-                                     style="width: 30px; height: 30px; object-fit: cover; margin-right: 8px;">
-                                {% endif %}
-                                {{ stat.product.description|truncatewords:8 }}
-                            </td>
-                            <td><code>{{ stat.product.barcode }}</code></td>
-                            <td class="text-end"><strong>{{ stat.total_qty|intcomma }}</strong></td>
-                            <td class="text-end">{{ stat.total_value|floatformat:2|intcomma }} ฿</td>
-                            <td class="text-center">
-                                <span class="badge bg-secondary">{{ stat.order_count }}</span>
-                            </td>
-                            <td class="text-end">{{ stat.avg_price|floatformat:2 }} ฿</td>
-                            <td>
-                                {% if stat.last_order_date %}
-                                    {{ stat.last_order_date|date:"M d, Y" }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}"
-                                   class="btn btn-sm btn-primary">
-                                    View Trend
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
-                                No products found in the selected period
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <small class="text-muted">แสดงข้อมูล: {{ start_date|date:"d/m/Y" }} ถึง {{ end_date|date:"d/m/Y" }}</small>
+                <span class="badge bg-primary ms-2">{{ product_stats|length }} สินค้า</span>
+            </div>
+            <div class="btn-group" role="group">
+                <a href="?months=3" class="btn btn-sm {% if months == 3 %}btn-primary{% else %}btn-outline-primary{% endif %}">3 เดือน</a>
+                <a href="?months=6" class="btn btn-sm {% if months == 6 %}btn-primary{% else %}btn-outline-primary{% endif %}">6 เดือน</a>
+                <a href="?months=12" class="btn btn-sm {% if months == 12 %}btn-primary{% else %}btn-outline-primary{% endif %}">12 เดือน</a>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="mt-4">
-        <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-success">
-            Compare Multiple Products
-        </a>
+    <!-- Product Cards Grid -->
+    <div class="row g-3">
+        {% for stat in product_stats %}
+        <div class="col-md-6 col-lg-4 col-xl-3">
+            <div class="product-card">
+                <div class="text-center">
+                    {% if stat.product.image %}
+                    <img src="{{ stat.product.image.url }}" alt="{{ stat.product.description }}" class="product-img">
+                    {% else %}
+                    <div class="product-img" style="background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
+                        <span style="font-size:32px;">📦</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="product-name">{{ stat.product.description|truncatechars:40 }}</div>
+                <div class="product-barcode">{{ stat.product.barcode }}</div>
+
+                <div style="margin-top: 16px;">
+                    <div class="stat-row">
+                        <span class="stat-label">ยอดขายรวม</span>
+                        <span class="stat-value highlight">{{ stat.total_qty|intcomma }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">มูลค่า</span>
+                        <span class="stat-value">฿{{ stat.total_value|floatformat:0|intcomma }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">ราคาเฉลี่ย</span>
+                        <span class="stat-value">฿{{ stat.avg_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">จำนวนครั้ง</span>
+                        <span class="stat-value">{{ stat.order_count }} ครั้ง</span>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-center">
+                    <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}"
+                       class="btn btn-sm btn-outline-primary w-100">
+                        ดูรายละเอียด →
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5 text-muted">
+                <h4>ไม่พบข้อมูลสินค้า</h4>
+                <p>ไม่มีข้อมูลการสั่งซื้อในช่วงเวลาที่เลือก</p>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}
