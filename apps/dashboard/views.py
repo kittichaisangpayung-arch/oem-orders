@@ -356,9 +356,10 @@ def production_summary(request):
 
             original_total += qty
 
-            # Apply override or minimum adjustment per store
+            # Apply override or minimum adjustment per store (net_qty already includes compensations)
             if (pid, sid) in overrides:
-                adjusted_total += overrides[(pid, sid)]
+                final_qty = overrides[(pid, sid)] - claimed + compensated
+                adjusted_total += final_qty
                 has_override = True
             elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
                 # Only apply minimum if store actually ordered (qty > 0)
@@ -848,18 +849,19 @@ def factory_summary(request):
 
             original_total += qty
 
-            # Apply override or minimum adjustment per store (before adding claims to final)
+            # Apply override or minimum adjustment per store (including claims and compensations)
             if (pid, sid) in overrides:
-                adjusted_total_before_claim += overrides[(pid, sid)]
-            elif qty > 0 and minimum > 0 and qty < minimum:
+                final_qty = overrides[(pid, sid)] - claimed + compensated
+                adjusted_total_before_claim += final_qty
+            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
                 # Only apply minimum if store actually ordered (qty > 0)
-                # Adjust based on original qty only, not including claims yet
+                # Minimum already accounts for net_qty which includes compensations
                 adjusted_total_before_claim += minimum
             else:
-                adjusted_total_before_claim += qty
+                adjusted_total_before_claim += net_qty
 
-        # Final net qty = adjusted order qty - claims + compensations
-        final_net_qty = adjusted_total_before_claim - claimed_total + compensated_total
+        # Final net qty already includes both claims and compensations
+        final_net_qty = adjusted_total_before_claim
 
         group_name = p["product_group"] or "ไม่ระบุกลุ่ม"
 
@@ -1030,20 +1032,19 @@ def shipping_summary(request):
     # Build shipping table with adjusted quantities - now shows ALL products and ALL stores
     table_rows = []
     store_totals = defaultdict(int)
-    store_claim_totals = defaultdict(int)
-    store_compensation_totals = defaultdict(int)
+    store_adjustment_totals = defaultdict(int)
 
     for pid in sorted_product_ids:
         p = products[pid]
         cells = []
         row_total = 0
-        row_claim_total = 0
-        row_compensation_total = 0
+        row_adjustment_total = 0
 
         for sid in sorted_store_ids:
             qty = matrix[pid].get(sid, 0)  # Will be 0 if not ordered
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
+            net_adjustment = compensated - claimed  # Net adjustment (positive if more compensation, negative if more claims)
             net_qty = qty - claimed + compensated
             minimum = p["min_order_qty"]
 
@@ -1068,37 +1069,31 @@ def shipping_summary(request):
 
             cells.append({
                 'qty': display_qty,  # Order qty only, with minimum if ordered
-                'claimed': claimed,
-                'compensated': compensated,
+                'adjustment': net_adjustment,  # Net adjustment (compensation - claim)
             })
             row_total += net_for_total
-            row_claim_total += claimed
-            row_compensation_total += compensated
+            row_adjustment_total += net_adjustment
             store_totals[sid] += net_for_total
-            store_claim_totals[sid] += claimed
-            store_compensation_totals[sid] += compensated
+            store_adjustment_totals[sid] += net_adjustment
 
         # Add row even if row_total is 0 to show all products
         table_rows.append({
             "product": p,
             "cells": cells,
             "row_total": row_total,
-            "row_claim_total": row_claim_total,
-            "row_compensation_total": row_compensation_total,
+            "row_adjustment_total": row_adjustment_total,
         })
 
     # Calculate grand total
     grand_total = sum(store_totals.values())
-    grand_claim_total = sum(store_claim_totals.values())
-    grand_compensation_total = sum(store_compensation_totals.values())
+    grand_adjustment_total = sum(store_adjustment_totals.values())
 
     # Prepare store columns with totals for easier template iteration
     store_columns = [
         {
             "name": stores[sid],
             "total": store_totals[sid],
-            "claim_total": store_claim_totals[sid],
-            "compensation_total": store_compensation_totals[sid],
+            "adjustment_total": store_adjustment_totals[sid],
         }
         for sid in sorted_store_ids
     ]
@@ -1108,8 +1103,7 @@ def shipping_summary(request):
         "store_columns": store_columns,
         "table_rows": table_rows,
         "grand_total": grand_total,
-        "grand_claim_total": grand_claim_total,
-        "grand_compensation_total": grand_compensation_total,
+        "grand_adjustment_total": grand_adjustment_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),
         "stores": Store.objects.filter(is_active=True),
