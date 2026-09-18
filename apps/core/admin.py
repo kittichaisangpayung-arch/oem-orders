@@ -87,6 +87,9 @@ else:
         ordering = ["sort_rank", "barcode"]
         fields = ["barcode", "description", "product_group", "image", "uom", "factory", "min_order_qty", "sort_rank", "is_active"]
 
+        # Enable autocomplete for this model
+        search_fields = ["barcode", "description"]
+
         def image_thumbnail(self, obj):
             if obj.image:
                 return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" />', obj.image.url)
@@ -96,13 +99,45 @@ else:
 
 @admin.register(CustomerProduct)
 class CustomerProductAdmin(admin.ModelAdmin):
-    list_display = ["customer", "product", "barcode_override", "customer_sku", "min_order_qty_override", "sort_rank_override"]
+    list_display = ["customer", "product", "effective_barcode_display", "customer_sku", "min_order_qty_override", "sort_rank_override"]
     list_filter = ["customer"]
     search_fields = ["barcode_override", "customer_sku", "product__barcode", "product__description"]
     fields = ["customer", "product", "barcode_override", "customer_sku", "min_order_qty_override", "sort_rank_override"]
+    autocomplete_fields = ["product"]
+
+    def effective_barcode_display(self, obj):
+        """Display effective barcode with indicator if overridden"""
+        effective = obj.effective_barcode
+        if obj.barcode_override:
+            return format_html('<span style="color: #0066cc; font-weight: bold;">{}</span> (Override)', effective)
+        return format_html('<span style="color: #666;">{}</span> (Default)', effective)
+    effective_barcode_display.short_description = "Effective Barcode"
 
     def get_readonly_fields(self, request, obj=None):
         # Make customer and product readonly after creation to prevent accidental changes
         if obj:  # Editing an existing object
             return ["customer", "product"]
         return []
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Filter products based on selected customer in the form"""
+        if db_field.name == "product":
+            # Get customer_id from the URL (for editing) or from POST (for adding)
+            customer_id = None
+            if request.resolver_match.kwargs.get('object_id'):
+                # Editing existing
+                obj_id = request.resolver_match.kwargs['object_id']
+                try:
+                    cp = CustomerProduct.objects.get(pk=obj_id)
+                    customer_id = cp.customer_id
+                except CustomerProduct.DoesNotExist:
+                    pass
+            elif 'customer' in request.GET:
+                # Adding new with customer pre-selected
+                customer_id = request.GET.get('customer')
+
+            # Note: We don't filter here because it would break the autocomplete
+            # The filtering should be done in JavaScript on the frontend
+            kwargs["queryset"] = Product.objects.filter(is_active=True).order_by('barcode')
+
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)

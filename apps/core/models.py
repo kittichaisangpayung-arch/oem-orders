@@ -177,3 +177,51 @@ class CustomerProduct(models.Model):
     @property
     def effective_sort_rank(self):
         return self.sort_rank_override if self.sort_rank_override is not None else self.product.sort_rank
+
+    @classmethod
+    def get_products_for_customer(cls, customer):
+        """
+        Get all products available for a customer, showing customer-specific barcode if exists.
+        Returns list of dicts with: product, effective_barcode, effective_min_order_qty, effective_sort_rank
+        """
+        # Get all customer product overrides
+        customer_products = cls.objects.filter(customer=customer).select_related('product')
+
+        # Build map of product_id -> customer_product
+        cp_map = {cp.product_id: cp for cp in customer_products}
+
+        # Get all active products
+        all_products = Product.objects.filter(is_active=True)
+
+        result = []
+        for product in all_products:
+            cp = cp_map.get(product.id)
+            if cp:
+                # Has customer override
+                result.append({
+                    'product': product,
+                    'customer_product': cp,
+                    'effective_barcode': cp.effective_barcode,
+                    'effective_min_order_qty': cp.effective_min_order_qty,
+                    'effective_sort_rank': cp.effective_sort_rank,
+                    'has_override': True,
+                })
+            else:
+                # Use default product values
+                result.append({
+                    'product': product,
+                    'customer_product': None,
+                    'effective_barcode': product.barcode,
+                    'effective_min_order_qty': product.min_order_qty,
+                    'effective_sort_rank': product.sort_rank,
+                    'has_override': False,
+                })
+
+        # Sort by effective_sort_rank and effective_barcode
+        result.sort(key=lambda x: (
+            x['effective_sort_rank'] is None,
+            x['effective_sort_rank'] or 0,
+            x['effective_barcode']
+        ))
+
+        return result
