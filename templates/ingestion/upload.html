@@ -51,6 +51,12 @@
                 <td class="label">{{ b.uploaded_at|date:"d/m/Y H:i" }}</td>
                 <td class="status-{{ b.status }}">{{ b.get_status_display }}</td>
                 <td class="label">
+                    {% if b.status == 'PENDING' %}
+                    <form method="post" action="{% url 'ingestion:confirm_batch' b.pk %}" style="display:inline; margin-right:8px;">
+                        {% csrf_token %}
+                        <button type="submit" style="background:#28a745; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer;">✅ ยืนยัน</button>
+                    </form>
+                    {% endif %}
                     {% if user.is_staff %}
                     <form method="post" action="{% url 'ingestion:delete_batch' b.pk %}" onsubmit="return confirm('ยืนยันลบ Batch #{{ b.pk }}? PO และรายการสินค้าทั้งหมดในนี้จะถูกลบไปด้วย');" style="display:inline;">
                         {% csrf_token %}
