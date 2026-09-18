@@ -96,5 +96,13 @@ else:
 
 @admin.register(CustomerProduct)
 class CustomerProductAdmin(admin.ModelAdmin):
-    list_display = ["customer", "product", "customer_sku", "min_order_qty_override", "sort_rank_override"]
+    list_display = ["customer", "product", "barcode_override", "customer_sku", "min_order_qty_override", "sort_rank_override"]
     list_filter = ["customer"]
+    search_fields = ["barcode_override", "customer_sku", "product__barcode", "product__description"]
+    fields = ["customer", "product", "barcode_override", "customer_sku", "min_order_qty_override", "sort_rank_override"]
+
+    def get_readonly_fields(self, request, obj=None):
+        # Make customer and product readonly after creation to prevent accidental changes
+        if obj:  # Editing an existing object
+            return ["customer", "product"]
+        return []

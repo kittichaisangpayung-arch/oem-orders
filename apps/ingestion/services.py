@@ -7,7 +7,7 @@ block ingestion of the rest of the batch (mirrors the old script's tolerant
 """
 from dataclasses import dataclass
 
-from apps.core.models import Product, Store
+from apps.core.models import CustomerProduct, Product, Store
 from apps.parsers.base import ParserError
 from apps.parsers.registry import get_parser
 
@@ -77,7 +77,18 @@ def _ingest_single_po(po: PurchaseOrder, parser) -> IngestResult:
     unmapped_barcodes = []
     line_items_to_create = []
     for item in parsed.line_items:
-        product = Product.objects.filter(barcode=item.barcode).first()
+        # Try to find product by customer-specific barcode first
+        customer_product = CustomerProduct.objects.filter(
+            customer=po.customer,
+            barcode_override=item.barcode
+        ).select_related('product').first()
+
+        if customer_product:
+            product = customer_product.product
+        else:
+            # Fall back to default product barcode
+            product = Product.objects.filter(barcode=item.barcode).first()
+
         if product is None:
             unmapped_barcodes.append(item.barcode)
         line_items_to_create.append(POLineItem(

@@ -138,11 +138,16 @@ class Product(models.Model):
 
 
 class CustomerProduct(models.Model):
-    """Optional per-customer override of a product's SKU text, minimum
-    order quantity, or sort order (falls back to Product's own values)."""
+    """Optional per-customer override of a product's SKU text, barcode,
+    minimum order quantity, or sort order (falls back to Product's own values)."""
 
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="product_overrides")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="customer_overrides")
+    barcode_override = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text="Customer-specific barcode; if blank, uses product's default barcode"
+    )
     customer_sku = models.CharField(max_length=100, blank=True)
     min_order_qty_override = models.PositiveIntegerField(null=True, blank=True)
     sort_rank_override = models.PositiveIntegerField(null=True, blank=True)
@@ -150,10 +155,20 @@ class CustomerProduct(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["customer", "product"], name="unique_product_per_customer"),
+            models.UniqueConstraint(
+                fields=["customer", "barcode_override"],
+                name="unique_barcode_per_customer",
+                condition=models.Q(barcode_override__gt=""),
+            ),
         ]
 
     def __str__(self):
         return f"{self.customer} / {self.product}"
+
+    @property
+    def effective_barcode(self):
+        """Return customer-specific barcode if set, otherwise product's default barcode."""
+        return self.barcode_override if self.barcode_override else self.product.barcode
 
     @property
     def effective_min_order_qty(self):
