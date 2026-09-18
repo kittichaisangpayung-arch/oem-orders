@@ -3,6 +3,7 @@ from django.urls import path
 from . import views
 from . import product_trends
 from . import product_inactivity
+from . import claim_analytics
 
 app_name = "dashboard"
 
@@ -33,4 +34,7 @@ urlpatterns = [
 
     # Product Inactivity Report
     path("inactivity/", product_inactivity.product_inactivity_report, name="product_inactivity_report"),
+
+    # Claim Analytics
+    path("claims/analytics/", claim_analytics.claim_summary_dashboard, name="claim_analytics"),
 ]
