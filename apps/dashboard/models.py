@@ -302,18 +302,20 @@ class Quotation(models.Model):
 
     def calculate_totals(self):
         """Calculate and update all financial fields"""
+        from decimal import Decimal
+
         # Calculate subtotal from line items
         self.subtotal = sum(item.amount for item in self.line_items.all())
 
         # Calculate discount
         if self.discount_percent > 0:
-            self.discount_amount = self.subtotal * (self.discount_percent / 100)
+            self.discount_amount = self.subtotal * (self.discount_percent / Decimal('100'))
 
         # Calculate amount after discount
         amount_after_discount = self.subtotal - self.discount_amount
 
         # Calculate VAT
-        self.vat_amount = amount_after_discount * (self.vat_rate / 100)
+        self.vat_amount = amount_after_discount * (self.vat_rate / Decimal('100'))
 
         # Calculate grand total
         self.grand_total = amount_after_discount + self.vat_amount
