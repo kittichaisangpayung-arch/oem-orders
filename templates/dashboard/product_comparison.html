@@ -2,32 +2,32 @@
 {% load humanize %}
 {% load dict_extras %}
 
-{% block title %}Product Comparison{% endblock %}
+{% block title %}เปรียบเทียบสินค้า{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-sm btn-outline-secondary mb-2">
-                ← Change Selection
+                ← เปลี่ยนการเลือก
             </a>
-            <h2>Product Comparison</h2>
+            <h2>📊 เปรียบเทียบสินค้า</h2>
         </div>
 
         <!-- Time Range Filter -->
         <div class="btn-group" role="group">
             <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=3"
-               class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 Months</a>
+               class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 เดือน</a>
             <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=6"
-               class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
+               class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 เดือน</a>
             <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=12"
-               class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
+               class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 เดือน</a>
         </div>
     </div>
 
     <div class="alert alert-info">
-        Comparing <strong>{{ comparison_data|length }}</strong> products from
-        <strong>{{ start_date|date:"M d, Y" }}</strong> to <strong>{{ end_date|date:"M d, Y" }}</strong>
+        กำลังเปรียบเทียบ <strong>{{ comparison_data|length }}</strong> สินค้า จาก
+        <strong>{{ start_date|date:"d/m/Y" }}</strong> ถึง <strong>{{ end_date|date:"d/m/Y" }}</strong>
     </div>
 
     <!-- Summary Cards -->
@@ -38,12 +38,12 @@
                 <div class="card-body">
                     <h6 class="text-muted mb-2">
                         {% if data.product.image %}
-                        <img src="{{ data.product.image.url }}" alt="" style="width: 24px; height: 24px; object-fit: cover;">
+                        <img src="{{ data.product.image.url }}" alt="" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px;">
                         {% endif %}
                         {{ data.product.description|truncatewords:5 }}
                     </h6>
                     <h4 class="mb-1">{{ data.total_qty|intcomma }}</h4>
-                    <small class="text-muted">{{ data.total_value|floatformat:0|intcomma }} ฿</small>
+                    <small class="text-muted">฿{{ data.total_value|floatformat:0|intcomma }}</small>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
     <!-- Comparison Chart -->
     <div class="card mb-4">
         <div class="card-header">
-            <h5 class="mb-0">Monthly Order Comparison</h5>
+            <h5 class="mb-0">กราฟเปรียบเทียบรายเดือน</h5>
         </div>
         <div class="card-body">
             <canvas id="comparisonChart" height="80"></canvas>
@@ -63,14 +63,14 @@
     <!-- Comparison Table -->
     <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Monthly Breakdown Table</h5>
+            <h5 class="mb-0">ตารางเปรียบเทียบรายเดือน</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-sm table-hover">
                     <thead>
                         <tr>
-                            <th>Month</th>
+                            <th>เดือน</th>
                             {% for data in comparison_data %}
                             <th class="text-end">
                                 {{ data.product.description|truncatewords:4 }}
@@ -95,7 +95,7 @@
                         </tr>
                         {% endfor %}
                         <tr class="table-light fw-bold">
-                            <td>TOTAL</td>
+                            <td>รวม</td>
                             {% for data in comparison_data %}
                             <td class="text-end">{{ data.total_qty|intcomma }}</td>
                             {% endfor %}
