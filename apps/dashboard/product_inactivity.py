@@ -106,9 +106,12 @@ def product_inactivity_report(request):
     report_data = []
 
     for customer in customers:
-        # Get products for this customer (only products they carry)
-        customer_products = CustomerProduct.get_products_for_customer(customer)
-        products = [cp['product'] for cp in customer_products]
+        # Get products for this customer (only products they actually have in CustomerProduct table)
+        customer_product_entries = CustomerProduct.objects.filter(
+            customer=customer
+        ).select_related('product').order_by('product__description')
+
+        products = [cp.product for cp in customer_product_entries if cp.product.is_active]
 
         if not products:
             continue  # Skip customers with no products
