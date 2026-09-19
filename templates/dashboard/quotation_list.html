@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block title %}รายการใบเสนอราคา{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📋 รายการใบเสนอราคา</h2>
+        <a href="{% url 'dashboard:create_quotation' %}" class="btn btn-primary">+ สร้างใบเสนอราคา</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>เลขที่</th>
+                            <th>ลูกค้า</th>
+                            <th>วันที่สร้าง</th>
+                            <th>ใช้ได้ถึง</th>
+                            <th>ยอดรวม</th>
+                            <th>สถานะ</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for qt in quotations %}
+                        <tr>
+                            <td><strong>{{ qt.quotation_number }}</strong></td>
+                            <td>{{ qt.customer.name }}</td>
+                            <td>{{ qt.created_at|date:"Y-m-d" }}</td>
+                            <td>
+                                {% if qt.valid_until %}
+                                    {{ qt.valid_until|date:"Y-m-d" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td><strong>฿{{ qt.grand_total|floatformat:2|intcomma }}</strong></td>
+                            <td>
+                                {% if qt.status == 'DRAFT' %}
+                                    <span class="badge bg-secondary">แบบร่าง</span>
+                                {% elif qt.status == 'SENT' %}
+                                    <span class="badge bg-info">ส่งแล้ว</span>
+                                {% elif qt.status == 'ACCEPTED' %}
+                                    <span class="badge bg-success">ยอมรับ</span>
+                                {% elif qt.status == 'REJECTED' %}
+                                    <span class="badge bg-danger">ปฏิเสธ</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'dashboard:quotation_detail' qt.id %}" class="btn btn-sm btn-outline-primary">ดู</a>
+                                <a href="{% url 'dashboard:edit_quotation' qt.id %}" class="btn btn-sm btn-outline-warning">แก้ไข</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                ไม่มีใบเสนอราคา
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

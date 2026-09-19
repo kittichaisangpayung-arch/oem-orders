@@ -30,6 +30,13 @@ urlpatterns = [
     path("invoices/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
     path("invoices/<int:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
 
+    # Quotations
+    path("quotations/", views.quotation_list, name="quotation_list"),
+    path("quotations/create/", views.create_quotation, name="create_quotation"),
+    path("quotations/<int:quotation_id>/", views.quotation_detail, name="quotation_detail"),
+    path("quotations/<int:quotation_id>/edit/", views.edit_quotation, name="edit_quotation"),
+    path("quotations/<int:quotation_id>/delete/", views.delete_quotation, name="delete_quotation"),
+
     # Product Trends
     path("trends/", product_trends.product_trend_list, name="product_trend_list"),
     path("trends/<int:product_id>/", product_trends.product_trend_detail, name="product_trend_detail"),

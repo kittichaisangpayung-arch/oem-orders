@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}แก้ไขใบเสนอราคา{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h2 class="mb-4">แก้ไขใบเสนอราคา: {{ quotation.quotation_number }}</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="quotationForm">
+                {% csrf_token %}
+
+                <!-- Customer Information (Read-only) -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">ลูกค้า</label>
+                        <input type="text" class="form-control" value="{{ quotation.customer.name }}" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">ชื่อผู้ติดต่อ</label>
+                        <input type="text" name="contact_person" class="form-control" value="{{ quotation.contact_person }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">อีเมล</label>
+                        <input type="email" name="contact_email" class="form-control" value="{{ quotation.contact_email }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">เบอร์โทร</label>
+                        <input type="text" name="contact_phone" class="form-control" value="{{ quotation.contact_phone }}">
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">ใช้ได้ถึง</label>
+                        <input type="date" name="valid_until" class="form-control" value="{{ quotation.valid_until|date:'Y-m-d' }}">
+                    </div>
+                </div>
+
+                <!-- Terms -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">เงื่อนไขการชำระเงิน</label>
+                        <input type="text" name="payment_terms" class="form-control" value="{{ quotation.payment_terms }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">เงื่อนไขการส่งสินค้า</label>
+                        <input type="text" name="delivery_terms" class="form-control" value="{{ quotation.delivery_terms }}">
+                    </div>
+                </div>
+
+                <!-- Line Items -->
+                <h5 class="mt-4 mb-3">รายการสินค้า</h5>
+                <div id="lineItems">
+                    {% for item in quotation.line_items.all %}
+                    <div class="card mb-2">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">สินค้า</label>
+                                    <select name="product_id" class="form-select product-select" onchange="updateProductInfo(this, {{ forloop.counter0 }})" required>
+                                        <option value="">-- เลือกสินค้า --</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}" data-description="{{ product.description }}" data-barcode="{{ product.barcode }}" {% if product.id == item.product.id %}selected{% endif %}>
+                                            {{ product.description }} ({{ product.barcode }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">คำอธิบาย</label>
+                                    <input type="text" name="description" class="form-control description-input" id="description_{{ forloop.counter0 }}" value="{{ item.description }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">จำนวน</label>
+                                    <input type="number" name="quantity" class="form-control" value="{{ item.quantity }}" min="1" required>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">ราคา/หน่วย</label>
+                                    <input type="number" name="unit_price" class="form-control" value="{{ item.unit_price }}" step="0.01" min="0" required>
+                                </div>
+                                <div class="col-md-1 d-flex align-items-end">
+                                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">ลบ</button>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="show_image" value="{{ item.product.id }}" id="showImage_{{ forloop.counter0 }}" {% if item.show_image %}checked{% endif %}>
+                                        <label class="form-check-label" for="showImage_{{ forloop.counter0 }}">
+                                            แสดงรูปสินค้าในใบเสนอราคา
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="btn btn-outline-primary btn-sm mb-3" onclick="addLineItem()">+ เพิ่มสินค้า</button>
+
+                <!-- Discount and Notes -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">ส่วนลด (%)</label>
+                        <input type="number" name="discount_percent" class="form-control" value="{{ quotation.discount_percent }}" step="0.01" min="0" max="100">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">หมายเหตุ</label>
+                    <textarea name="notes" class="form-control" rows="3">{{ quotation.notes }}</textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success">บันทึกการแก้ไข</button>
+                    <a href="{% url 'dashboard:quotation_detail' quotation.id %}" class="btn btn-secondary">ยกเลิก</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let lineItemIndex = {{ quotation.line_items.count }};
+
+function addLineItem() {
+    const container = document.getElementById('lineItems');
+    const itemDiv = document.createElement('div');
+    itemDiv.className = 'card mb-2';
+    itemDiv.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">สินค้า</label>
+                    <select name="product_id" class="form-select product-select" onchange="updateProductInfo(this, ${lineItemIndex})" required>
+                        <option value="">-- เลือกสินค้า --</option>
+                        {% for product in products %}
+                        <option value="{{ product.id }}" data-description="{{ product.description }}" data-barcode="{{ product.barcode }}">
+                            {{ product.description }} ({{ product.barcode }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">คำอธิบาย</label>
+                    <input type="text" name="description" class="form-control description-input" id="description_${lineItemIndex}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">จำนวน</label>
+                    <input type="number" name="quantity" class="form-control" value="1" min="1" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">ราคา/หน่วย</label>
+                    <input type="number" name="unit_price" class="form-control" value="0" step="0.01" min="0" required>
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.card').remove()">ลบ</button>
+                </div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-md-12">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="show_image" value="" id="showImage_${lineItemIndex}">
+                        <label class="form-check-label" for="showImage_${lineItemIndex}">
+                            แสดงรูปสินค้าในใบเสนอราคา
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    container.appendChild(itemDiv);
+    lineItemIndex++;
+}
+
+function updateProductInfo(selectElement, index) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const description = selectedOption.getAttribute('data-description');
+    const descriptionInput = document.getElementById('description_' + index);
+    const checkbox = document.getElementById('showImage_' + index);
+
+    if (descriptionInput && description) {
+        descriptionInput.value = description;
+    }
+
+    if (checkbox) {
+        checkbox.value = selectElement.value;
+    }
+}
+</script>
+{% endblock %}

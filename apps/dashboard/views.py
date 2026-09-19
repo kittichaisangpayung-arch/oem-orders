@@ -1734,3 +1734,185 @@ def invoice_receipt(request, invoice_id):
     }
     return render(request, "dashboard/invoice_receipt.html", context)
 
+
+@login_required
+def quotation_list(request):
+    """List all quotations"""
+    from .models import Quotation
+
+    quotations = Quotation.objects.select_related("customer", "created_by").order_by("-created_at")
+
+    context = {
+        "quotations": quotations,
+    }
+    return render(request, "dashboard/quotation_list.html", context)
+
+
+@login_required
+def create_quotation(request):
+    """Create a new quotation"""
+    from .models import Quotation, QuotationLineItem
+    from apps.core.models import Customer, Product, CompanyProfile
+    from datetime import datetime, timedelta
+    from decimal import Decimal
+
+    if request.method == "POST":
+        customer_id = request.POST.get("customer")
+        customer = get_object_or_404(Customer, pk=customer_id)
+
+        # Create quotation
+        quotation = Quotation.objects.create(
+            customer=customer,
+            billing_address=customer.head_office_address or customer.name,
+            customer_tax_id=customer.tax_id,
+            contact_person=request.POST.get("contact_person", ""),
+            contact_email=request.POST.get("contact_email", ""),
+            contact_phone=request.POST.get("contact_phone", ""),
+            valid_until=datetime.now().date() + timedelta(days=30),
+            payment_terms=request.POST.get("payment_terms", "ระยะเวลา 30 วัน"),
+            delivery_terms=request.POST.get("delivery_terms", "ส่งสินค้าภายใน 7 วันทำการ"),
+            notes=request.POST.get("notes", ""),
+            discount_percent=Decimal(request.POST.get("discount_percent", 0)),
+            created_by=request.user,
+        )
+
+        # Add line items
+        product_ids = request.POST.getlist("product_id")
+        quantities = request.POST.getlist("quantity")
+        unit_prices = request.POST.getlist("unit_price")
+        descriptions = request.POST.getlist("description")
+        show_images = request.POST.getlist("show_image")
+
+        for idx, product_id in enumerate(product_ids):
+            if product_id:
+                product = Product.objects.get(pk=product_id)
+                QuotationLineItem.objects.create(
+                    quotation=quotation,
+                    product=product,
+                    description=descriptions[idx] if idx < len(descriptions) else product.description,
+                    quantity=int(quantities[idx]) if idx < len(quantities) else 1,
+                    unit_price=Decimal(unit_prices[idx]) if idx < len(unit_prices) else Decimal("0"),
+                    show_image=str(product_id) in show_images,
+                    line_no=idx + 1,
+                )
+
+        # Calculate totals
+        quotation.calculate_totals()
+
+        return redirect("dashboard:quotation_detail", quotation_id=quotation.id)
+
+    # GET request - show form
+    customers = Customer.objects.filter(is_active=True).order_by("name")
+    products = Product.objects.filter(is_active=True).order_by("sort_rank", "barcode")
+
+    context = {
+        "customers": customers,
+        "products": products,
+    }
+    return render(request, "dashboard/create_quotation.html", context)
+
+
+@login_required
+def quotation_detail(request, quotation_id):
+    """View single quotation"""
+    from .models import Quotation
+    from apps.core.models import CompanyProfile
+
+    quotation = get_object_or_404(
+        Quotation.objects.select_related("customer", "created_by")
+        .prefetch_related("line_items__product")
+        , pk=quotation_id
+    )
+
+    # Get company profile
+    company = CompanyProfile.get_active()
+
+    context = {
+        "quotation": quotation,
+        "company": company,
+    }
+    return render(request, "dashboard/quotation_detail.html", context)
+
+
+@login_required
+def edit_quotation(request, quotation_id):
+    """Edit quotation"""
+    from .models import Quotation, QuotationLineItem
+    from apps.core.models import Product
+    from decimal import Decimal
+
+    quotation = get_object_or_404(
+        Quotation.objects.select_related("customer")
+        .prefetch_related("line_items__product")
+        , pk=quotation_id
+    )
+
+    if request.method == "POST":
+        # Update quotation fields
+        quotation.contact_person = request.POST.get("contact_person", "")
+        quotation.contact_email = request.POST.get("contact_email", "")
+        quotation.contact_phone = request.POST.get("contact_phone", "")
+        quotation.payment_terms = request.POST.get("payment_terms", "")
+        quotation.delivery_terms = request.POST.get("delivery_terms", "")
+        quotation.notes = request.POST.get("notes", "")
+        quotation.discount_percent = Decimal(request.POST.get("discount_percent", 0))
+
+        valid_until = request.POST.get("valid_until")
+        if valid_until:
+            from datetime import datetime
+            quotation.valid_until = datetime.strptime(valid_until, "%Y-%m-%d").date()
+
+        quotation.save()
+
+        # Delete existing line items
+        quotation.line_items.all().delete()
+
+        # Add new line items
+        product_ids = request.POST.getlist("product_id")
+        quantities = request.POST.getlist("quantity")
+        unit_prices = request.POST.getlist("unit_price")
+        descriptions = request.POST.getlist("description")
+        show_images = request.POST.getlist("show_image")
+
+        for idx, product_id in enumerate(product_ids):
+            if product_id:
+                product = Product.objects.get(pk=product_id)
+                QuotationLineItem.objects.create(
+                    quotation=quotation,
+                    product=product,
+                    description=descriptions[idx] if idx < len(descriptions) else product.description,
+                    quantity=int(quantities[idx]) if idx < len(quantities) else 1,
+                    unit_price=Decimal(unit_prices[idx]) if idx < len(unit_prices) else Decimal("0"),
+                    show_image=str(product_id) in show_images,
+                    line_no=idx + 1,
+                )
+
+        # Recalculate totals
+        quotation.calculate_totals()
+
+        return redirect("dashboard:quotation_detail", quotation_id=quotation.id)
+
+    # GET request
+    products = Product.objects.filter(is_active=True).order_by("sort_rank", "barcode")
+
+    context = {
+        "quotation": quotation,
+        "products": products,
+    }
+    return render(request, "dashboard/edit_quotation.html", context)
+
+
+@login_required
+def delete_quotation(request, quotation_id):
+    """Delete a quotation"""
+    from .models import Quotation
+
+    if request.method != "POST":
+        return redirect("dashboard:quotation_list")
+
+    quotation = get_object_or_404(Quotation, pk=quotation_id)
+    quotation.delete()
+
+    return redirect("dashboard:quotation_list")
+
+
