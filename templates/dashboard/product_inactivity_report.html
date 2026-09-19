@@ -49,6 +49,18 @@
                 </select>
             </div>
 
+            <div>
+                <label for="store" class="block text-sm font-medium text-gray-700 mb-1">
+                    สาขา
+                </label>
+                <select name="store" id="store" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- ทุกสาขา --</option>
+                    {% for s in stores %}
+                        <option value="{{ s.pk }}" {% if request.GET.store == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.customer.name }} - {{ s.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-md transition-colors">
                 ดูรายงาน
             </button>
@@ -95,76 +107,91 @@
         {% for customer_data in report_data %}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
             <!-- Customer Header -->
-            <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-200 px-6 py-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-xl font-bold text-gray-900">{{ customer_data.customer.name }}</h2>
                     <div class="flex gap-3 items-center">
                         <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
                             {{ customer_data.total_products }} สินค้าทั้งหมด
                         </span>
-                        <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
-                            {{ customer_data.total_inactive }} สินค้าไม่ได้สั่ง
+                        <span class="bg-orange-100 text-orange-800 text-sm font-medium px-3 py-1 rounded-full">
+                            {{ customer_data.total_stores_with_issues }} สาขามีปัญหา
                         </span>
                     </div>
                 </div>
             </div>
 
-            <!-- Products Table -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                สินค้า
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                รหัสสินค้า
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                สั่งครั้งล่าสุด
-                            </th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                ไม่สั่งมาแล้ว
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for item in customer_data.inactive_products %}
-                        <tr class="{{ item.css_class }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ item.product.description }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-600 font-mono">{{ item.product.barcode }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {% if item.last_ordered %}
-                                    <div class="text-sm text-gray-900">{{ item.last_ordered|date:"d/m/Y" }}</div>
-                                    <div class="text-xs text-gray-500">{{ item.last_ordered|date:"H:i" }} น.</div>
-                                {% else %}
-                                    <div class="text-sm text-gray-400 italic">ไม่เคยสั่ง</div>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right">
-                                {% if item.weeks_inactive is None %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                                        ไม่เคยสั่ง
-                                    </span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                        {% if item.alert_level == 'warning' %}bg-yellow-100 text-yellow-800
-                                        {% elif item.alert_level == 'alert' %}bg-orange-100 text-orange-800
-                                        {% elif item.alert_level == 'critical' %}bg-red-100 text-red-800
-                                        {% endif %}">
-                                        {{ item.weeks_inactive }} สัปดาห์
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <!-- Stores within Customer -->
+            {% for store_data in customer_data.stores %}
+            <div class="border-b border-gray-200 last:border-b-0">
+                <!-- Store Header -->
+                <div class="bg-gray-50 px-6 py-3">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-800">{{ store_data.store.name }}</h3>
+                        <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                            {{ store_data.total_inactive }} สินค้าไม่ได้สั่ง
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Products Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    สินค้า
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    รหัสสินค้า
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    สั่งครั้งล่าสุด
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    ไม่สั่งมาแล้ว
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for item in store_data.inactive_products %}
+                            <tr class="{{ item.css_class }}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ item.product.description }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-600 font-mono">{{ item.product.barcode }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if item.last_ordered %}
+                                        <div class="text-sm text-gray-900">{{ item.last_ordered|date:"d/m/Y" }}</div>
+                                        <div class="text-xs text-gray-500">{{ item.last_ordered|date:"H:i" }} น.</div>
+                                    {% else %}
+                                        <div class="text-sm text-gray-400 italic">ไม่เคยสั่ง</div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right">
+                                    {% if item.weeks_inactive is None %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            ไม่เคยสั่ง
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                            {% if item.alert_level == 'warning' %}bg-yellow-100 text-yellow-800
+                                            {% elif item.alert_level == 'alert' %}bg-orange-100 text-orange-800
+                                            {% elif item.alert_level == 'critical' %}bg-red-100 text-red-800
+                                            {% endif %}">
+                                            {{ item.weeks_inactive }} สัปดาห์
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
+            {% endfor %}
         </div>
         {% endfor %}
     {% else %}
