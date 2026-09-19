@@ -10,6 +10,39 @@
         <a href="{% url 'dashboard:create_quotation' %}" class="btn btn-primary">+ สร้างใบเสนอราคา</a>
     </div>
 
+    <!-- Filters -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">ลูกค้า</label>
+                    <select name="customer" class="form-select">
+                        <option value="">-- ทุกลูกค้า --</option>
+                        {% for customer in customers %}
+                            <option value="{{ customer.id }}" {% if selected_customer == customer.id|stringformat:"s" %}selected{% endif %}>
+                                {{ customer.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">สถานะ</label>
+                    <select name="status" class="form-select">
+                        <option value="">-- ทุกสถานะ --</option>
+                        <option value="DRAFT" {% if selected_status == "DRAFT" %}selected{% endif %}>แบบร่าง</option>
+                        <option value="SENT" {% if selected_status == "SENT" %}selected{% endif %}>ส่งแล้ว</option>
+                        <option value="ACCEPTED" {% if selected_status == "ACCEPTED" %}selected{% endif %}>ยอมรับ</option>
+                        <option value="REJECTED" {% if selected_status == "REJECTED" %}selected{% endif %}>ปฏิเสธ</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">ค้นหา</button>
+                    <a href="{% url 'dashboard:quotation_list' %}" class="btn btn-secondary">รีเซ็ต</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body">
             <div class="table-responsive">

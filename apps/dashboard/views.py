@@ -1739,11 +1739,27 @@ def invoice_receipt(request, invoice_id):
 def quotation_list(request):
     """List all quotations"""
     from .models import Quotation
+    from apps.core.models import Customer
 
     quotations = Quotation.objects.select_related("customer", "created_by").order_by("-created_at")
 
+    # Filter by customer
+    customer_filter = request.GET.get('customer')
+    if customer_filter:
+        quotations = quotations.filter(customer_id=customer_filter)
+
+    # Filter by status
+    status_filter = request.GET.get('status')
+    if status_filter:
+        quotations = quotations.filter(status=status_filter)
+
+    customers = Customer.objects.filter(is_active=True).order_by('name')
+
     context = {
         "quotations": quotations,
+        "customers": customers,
+        "selected_customer": customer_filter,
+        "selected_status": status_filter,
     }
     return render(request, "dashboard/quotation_list.html", context)
 
