@@ -36,6 +36,7 @@ urlpatterns = [
     path("quotations/<int:quotation_id>/", views.quotation_detail, name="quotation_detail"),
     path("quotations/<int:quotation_id>/edit/", views.edit_quotation, name="edit_quotation"),
     path("quotations/<int:quotation_id>/delete/", views.delete_quotation, name="delete_quotation"),
+    path("quotations/<int:quotation_id>/update-status/", views.update_quotation_status, name="update_quotation_status"),
 
     # Product Trends
     path("trends/", product_trends.product_trend_list, name="product_trend_list"),

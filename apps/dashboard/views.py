@@ -1932,3 +1932,27 @@ def delete_quotation(request, quotation_id):
     return redirect("dashboard:quotation_list")
 
 
+@login_required
+def update_quotation_status(request, quotation_id):
+    """Update quotation status"""
+    from .models import Quotation
+    from datetime import datetime
+
+    if request.method != "POST":
+        return redirect("dashboard:quotation_detail", quotation_id=quotation_id)
+
+    quotation = get_object_or_404(Quotation, pk=quotation_id)
+    new_status = request.POST.get("status")
+
+    if new_status in ["DRAFT", "SENT", "ACCEPTED", "REJECTED"]:
+        quotation.status = new_status
+
+        # Set sent_at timestamp when status changes to SENT
+        if new_status == "SENT" and not quotation.sent_at:
+            quotation.sent_at = datetime.now()
+
+        quotation.save()
+
+    return redirect("dashboard:quotation_detail", quotation_id=quotation_id)
+
+
