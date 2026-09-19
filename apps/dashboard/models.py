@@ -309,13 +309,13 @@ class Quotation(models.Model):
 
         # Calculate discount
         if self.discount_percent > 0:
-            self.discount_amount = self.subtotal * (self.discount_percent / Decimal('100'))
+            self.discount_amount = self.subtotal * (Decimal(str(self.discount_percent)) / Decimal('100'))
 
         # Calculate amount after discount
         amount_after_discount = self.subtotal - self.discount_amount
 
         # Calculate VAT
-        self.vat_amount = amount_after_discount * (self.vat_rate / Decimal('100'))
+        self.vat_amount = amount_after_discount * (Decimal(str(self.vat_rate)) / Decimal('100'))
 
         # Calculate grand total
         self.grand_total = amount_after_discount + self.vat_amount
