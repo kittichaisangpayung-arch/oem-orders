@@ -2,21 +2,15 @@
 {% load static %}
 {% load thai_baht %}
 {% load humanize %}
-{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block title %}{{ invoice.invoice_number }} - Receipt{% endblock %}
 {% block content %}
 <div class="invoice-container">
     <div class="no-print" style="margin-bottom: 16px;">
-        <button onclick="window.print()" style="background:#17a2b8; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🖨️ พิมพ์ Invoice</button>
-        <a href="{% url 'dashboard:invoice_receipt' invoice.id %}" target="_blank" style="background: #28a745; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">📄 ใบเสร็จ (Receipt)</a>
-        <a href="{% url 'dashboard:invoice_list' %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">← กลับ</a>
-        <a href="{% url 'dashboard:edit_invoice' invoice.id %}" style="background: #ffc107; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">✏️ แก้ไข</a>
-        <form method="post" action="{% url 'dashboard:delete_invoice' invoice.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Invoice นี้?');">
-            {% csrf_token %}
-            <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🗑️ ลบ</button>
-        </form>
+        <button onclick="window.print()" style="background:#17a2b8; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🖨️ พิมพ์ Receipt</button>
+        <a href="{% url 'dashboard:invoice_detail' invoice.id %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">← กลับ Invoice</a>
     </div>
 
-    <!-- PAGE 1: Invoice Document -->
+    <!-- PAGE 1: Receipt Document -->
     <div class="invoice-page">
         <!-- Header with Logo -->
         <table style="width: 100%; margin-bottom: 10px;">
@@ -46,7 +40,7 @@
         <!-- Title -->
         <div style="text-align: center; margin: 10px 0;">
             <div style="font-size: 20px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 6px 0;">
-                ใบแจ้งหนี้ / INVOICE
+                ใบเสร็จรับเงิน / RECEIPT
             </div>
         </div>
 
@@ -164,8 +158,8 @@
                 </td>
                 <td style="width: 33%; text-align: center; vertical-align: bottom; padding: 0 10px;">
                     <div style="border-bottom: 1px solid #000; height: 50px; margin-bottom: 5px;"></div>
-                    <div>ผู้รับเอกสาร</div>
-                    <div style="margin-top: 3px;">Received By</div>
+                    <div>ผู้รับเงิน</div>
+                    <div style="margin-top: 3px;">Received Payment By</div>
                     <div style="margin-top: 8px;">วันที่ / Date: _______________</div>
                 </td>
             </tr>
@@ -173,7 +167,7 @@
 
         <!-- Footer -->
         <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
-            <p style="margin: 0;">*** กรุณาชำระเงินภายในกำหนด / Please pay within the due date ***</p>
+            <p style="margin: 0;">*** ขอบคุณที่ชำระเงิน / Thank you for your payment ***</p>
         </div>
     </div>
 
@@ -204,7 +198,7 @@
         <!-- Title -->
         <div style="text-align: center; margin: 15px 0;">
             <div style="font-size: 24px; font-weight: bold; border-top: 2px solid #000; border-bottom: 2px solid #000; padding: 8px 0;">
-                ใบแจ้งหนี้ / INVOICE (หน้า 2)
+                ใบเสร็จรับเงิน / RECEIPT (หน้า 2)
             </div>
         </div>
 
@@ -267,7 +261,7 @@
             <div style="font-weight: bold; font-size: 13px; margin-bottom: 10px; border-bottom: 1px solid #000; padding-bottom: 5px;">
                 ข้อมูลการชำระเงิน / Payment Information
             </div>
-            <div><strong>หมายเหตุ:</strong> การโอนเงินไปยังชื่อบัญชี: <strong>{{ company.bank_account_name }}</strong></div>
+            <div><strong>ชำระเงินให้กับ:</strong> <strong>{{ company.bank_account_name }}</strong></div>
             <div style="margin-top: 8px;"><strong>เงื่อนไขการชำระเงิน:</strong> {{ invoice.payment_terms }}</div>
             <div style="margin-top: 8px;">
                 <strong>ธนาคาร:</strong> {{ company.bank_name }}<br>

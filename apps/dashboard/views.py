@@ -1707,3 +1707,30 @@ def delete_invoice(request, invoice_id):
     invoice.delete()
 
     return redirect("dashboard:invoice_list")
+
+
+@login_required
+def invoice_receipt(request, invoice_id):
+    """View receipt version of invoice"""
+    from .models import Invoice
+    from apps.core.models import CompanyProfile
+
+    invoice = get_object_or_404(
+        Invoice.objects.select_related("customer", "created_by")
+        .prefetch_related("line_items__delivery_note")
+        , pk=invoice_id
+    )
+
+    # Get company profile
+    company = CompanyProfile.get_active()
+
+    # Calculate total quantity
+    total_quantity = sum(item.quantity for item in invoice.line_items.all())
+
+    context = {
+        "invoice": invoice,
+        "company": company,
+        "total_quantity": total_quantity,
+    }
+    return render(request, "dashboard/invoice_receipt.html", context)
+
