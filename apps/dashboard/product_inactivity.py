@@ -1,5 +1,5 @@
 """
-Product Inactivity Report - Track products not ordered by stores for extended periods
+Product Inactivity Report - Track products not ordered by customers for extended periods
 """
 from datetime import datetime, timedelta
 from django.db.models import Max, Q
@@ -7,22 +7,22 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
-from apps.core.models import Product, Store
+from apps.core.models import Product, Store, Customer, CustomerProduct
 from apps.ingestion.models import POLineItem, PurchaseOrder
 
 
-def get_last_order_dates(store, products, lookback_months=12):
+def get_last_order_dates(customer, products, lookback_months=12):
     """
-    Get the last order date for each product at a specific store.
+    Get the last order date for each product for a specific customer (across all their stores).
 
     Returns:
         dict: {product_id: last_order_date or None}
     """
     lookback_date = timezone.now() - timedelta(days=lookback_months * 30)
 
-    # Get all line items for this store within lookback period
+    # Get all line items for this customer's stores within lookback period
     line_items = POLineItem.objects.filter(
-        purchase_order__store=store,
+        purchase_order__store__customer=customer,
         purchase_order__created_at__gte=lookback_date,
         product__in=products
     ).values('product_id').annotate(
@@ -82,26 +82,32 @@ def get_alert_level(weeks_inactive):
 @login_required
 def product_inactivity_report(request):
     """
-    Display a report of products not ordered by each store for extended periods.
+    Display a report of products not ordered by each customer for extended periods.
+    Each customer has their own product catalog, so we only check products they actually carry.
     """
     # Get filter parameters
     min_weeks = int(request.GET.get('min_weeks', 2))  # Minimum weeks to show
     lookback_months = int(request.GET.get('lookback_months', 12))  # How far back to check
-    store_filter = request.GET.get('store')
+    customer_filter = request.GET.get('customer')
 
-    # Get all active stores and products
-    stores = Store.objects.filter(is_active=True)
-    if store_filter:
-        stores = stores.filter(id=store_filter)
-    stores = stores.order_by('name')
-
-    products = Product.objects.filter(is_active=True).order_by('description')
+    # Get all active customers
+    customers = Customer.objects.filter(is_active=True)
+    if customer_filter:
+        customers = customers.filter(id=customer_filter)
+    customers = customers.order_by('name')
 
     # Build report data
     report_data = []
 
-    for store in stores:
-        last_order_dates = get_last_order_dates(store, products, lookback_months)
+    for customer in customers:
+        # Get products for this customer (only products they carry)
+        customer_products = CustomerProduct.get_products_for_customer(customer)
+        products = [cp['product'] for cp in customer_products]
+
+        if not products:
+            continue  # Skip customers with no products
+
+        last_order_dates = get_last_order_dates(customer, products, lookback_months)
 
         inactive_products = []
         for product in products:
@@ -125,20 +131,20 @@ def product_inactivity_report(request):
             reverse=True
         )
 
-        if inactive_products:  # Only include stores with inactive products
+        if inactive_products:  # Only include customers with inactive products
             report_data.append({
-                'store': store,
+                'customer': customer,
                 'inactive_products': inactive_products,
                 'total_inactive': len(inactive_products),
+                'total_products': len(products),
             })
 
     context = {
         'report_data': report_data,
         'min_weeks': min_weeks,
         'lookback_months': lookback_months,
-        'total_stores': len(report_data),
-        'total_products': products.count(),
-        'stores': Store.objects.filter(is_active=True),
+        'total_customers': len(report_data),
+        'customers': Customer.objects.filter(is_active=True),
     }
 
     return render(request, 'dashboard/product_inactivity_report.html', context)

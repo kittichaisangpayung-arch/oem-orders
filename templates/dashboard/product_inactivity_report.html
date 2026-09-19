@@ -8,7 +8,7 @@
     <!-- Header -->
     <div class="mb-6">
         <h1 class="text-3xl font-bold text-gray-900 mb-2">รายงานสินค้าที่ไม่ได้สั่งนาน</h1>
-        <p class="text-gray-600">ติดตามสินค้าที่แต่ละสาขาไม่ได้สั่งติดต่อกันเป็นเวลานาน</p>
+        <p class="text-gray-600">ติดตามสินค้าที่แต่ละลูกค้าไม่ได้สั่งติดต่อกันเป็นเวลานาน</p>
     </div>
 
     <!-- Filters -->
@@ -38,13 +38,13 @@
             </div>
 
             <div>
-                <label for="store" class="block text-sm font-medium text-gray-700 mb-1">
-                    สาขา
+                <label for="customer" class="block text-sm font-medium text-gray-700 mb-1">
+                    ลูกค้า
                 </label>
-                <select name="store" id="store" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">-- ทุกสาขา --</option>
-                    {% for s in stores %}
-                        <option value="{{ s.pk }}" {% if request.GET.store == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                <select name="customer" id="customer" class="border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">-- ทุกลูกค้า --</option>
+                    {% for c in customers %}
+                        <option value="{{ c.pk }}" {% if request.GET.customer == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -56,14 +56,10 @@
     </div>
 
     <!-- Summary -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div class="text-sm text-gray-600 mb-1">จำนวนสาขาที่มีสินค้าไม่ได้สั่ง</div>
-            <div class="text-2xl font-bold text-gray-900">{{ total_stores }}</div>
-        </div>
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div class="text-sm text-gray-600 mb-1">สินค้าทั้งหมดในระบบ</div>
-            <div class="text-2xl font-bold text-gray-900">{{ total_products }}</div>
+            <div class="text-sm text-gray-600 mb-1">จำนวนลูกค้าที่มีสินค้าไม่ได้สั่ง</div>
+            <div class="text-2xl font-bold text-gray-900">{{ total_customers }}</div>
         </div>
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div class="text-sm text-gray-600 mb-1">เกณฑ์การแจ้งเตือน</div>
@@ -96,15 +92,20 @@
 
     <!-- Report Data -->
     {% if report_data %}
-        {% for store_data in report_data %}
+        {% for customer_data in report_data %}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 overflow-hidden">
-            <!-- Store Header -->
+            <!-- Customer Header -->
             <div class="bg-gray-50 border-b border-gray-200 px-6 py-4">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-xl font-bold text-gray-900">{{ store_data.store.name }}</h2>
-                    <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
-                        {{ store_data.total_inactive }} สินค้าไม่ได้สั่ง
-                    </span>
+                    <h2 class="text-xl font-bold text-gray-900">{{ customer_data.customer.name }}</h2>
+                    <div class="flex gap-3 items-center">
+                        <span class="bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full">
+                            {{ customer_data.total_products }} สินค้าทั้งหมด
+                        </span>
+                        <span class="bg-red-100 text-red-800 text-sm font-medium px-3 py-1 rounded-full">
+                            {{ customer_data.total_inactive }} สินค้าไม่ได้สั่ง
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -128,7 +129,7 @@
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {% for item in store_data.inactive_products %}
+                        {% for item in customer_data.inactive_products %}
                         <tr class="{{ item.css_class }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm font-medium text-gray-900">{{ item.product.description }}</div>
@@ -172,7 +173,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
             <h3 class="text-lg font-medium text-gray-900 mb-2">ไม่พบสินค้าที่ไม่ได้สั่งนาน</h3>
-            <p class="text-gray-500">ทุกสาขาสั่งสินค้าอย่างสม่ำเสมอในช่วงเวลาที่กำหนด</p>
+            <p class="text-gray-500">ทุกลูกค้าสั่งสินค้าอย่างสม่ำเสมอในช่วงเวลาที่กำหนด</p>
         </div>
     {% endif %}
 </div>
