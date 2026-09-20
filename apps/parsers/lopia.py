@@ -19,17 +19,15 @@ _RE_ORDER_NO = re.compile(r"Order No\.\s*:\s*(\S+)")
 _RE_DELIVERY_ADDRESS = re.compile(r"Delivery Address\s+(.+?)\s+(?:Central|Tel:)", re.DOTALL)
 
 # Product line pattern - Lopia format:
-# Date Barcode Description UoM Quantity UnitCost Cost Amount
+# Date Barcode Description UoM DirectCost Quantity Discount Amount
 # Example: 2026/09/24 8858911200956 GREEK YOGURT BUTTERFLY Pieces 45.00 60 0.00 2,700.00
-# NOTE: Field order from PDF header is: Quantity Discount Cost Amount
-# But actual data shows: Field5=UnitCost (60,40), Field6=0.00, Field7=Amount
-# We capture: (1)Barcode (2)Description (3)UoM (4)Quantity (5)UnitCost (6)Cost (7)Amount
+# Field mapping: (1)Barcode (2)Description (3)UoM (4)DirectCost(UnitPrice) (5)Quantity (6)Discount (7)Amount
 _RE_PRODUCTS = re.compile(
     r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+(Pieces|PCS|BOX|pcs|pieces)\s+([\d\.]+)\s+([\d\.]+)\s+([\d,\.]+)\s+([\d,\.]+)"
 )
 
 # Alternative pattern without UoM (flexible)
-# Captures: (1)Barcode (2)Description (3)Quantity (4)UnitCost (5)Cost (6)Amount
+# Captures: (1)Barcode (2)Description (3)DirectCost (4)Quantity (5)Discount (6)Amount
 _RE_FLEX = re.compile(
     r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+([\d\.]+)\s+([\d\.]+)\s+([\d,\.]+)\s+([\d,\.]+)"
 )
@@ -113,13 +111,13 @@ class LopiaParser(BasePOParser):
 
     def _extract_strict(self, text: str) -> list[ParsedLineItem]:
         items = []
-        for line_no, (barcode, desc, uom, qty, unit_cost, cost, amount) in enumerate(
+        for line_no, (barcode, desc, uom, direct_cost, qty, discount, amount) in enumerate(
             _RE_PRODUCTS.findall(text), start=1
         ):
             qty_float = float(qty)
             qty_int = int(qty_float)
             amount_float = _to_float(amount)
-            unit_cost_float = float(unit_cost)  # Field 5 is the actual unit cost
+            unit_cost_float = float(direct_cost)  # Field 4 is the unit cost
 
             items.append(ParsedLineItem(
                 barcode=barcode,
@@ -135,13 +133,13 @@ class LopiaParser(BasePOParser):
 
     def _extract_flexible(self, text: str) -> list[ParsedLineItem]:
         items = []
-        for line_no, (barcode, desc, qty, unit_cost, cost, amount) in enumerate(
+        for line_no, (barcode, desc, direct_cost, qty, discount, amount) in enumerate(
             _RE_FLEX.findall(text), start=1
         ):
             qty_float = float(qty)
             qty_int = int(qty_float)
             amount_float = _to_float(amount)
-            unit_cost_float = float(unit_cost)  # Field 4 is the actual unit cost
+            unit_cost_float = float(direct_cost)  # Field 3 is the unit cost
 
             items.append(ParsedLineItem(
                 barcode=barcode,
