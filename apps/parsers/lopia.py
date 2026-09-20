@@ -21,13 +21,15 @@ _RE_DELIVERY_ADDRESS = re.compile(r"Delivery Address\s+(.+?)\s+(?:Central|Tel:)"
 # Product line pattern - Lopia format:
 # Date Barcode Description UoM Quantity DirectCost Discount Amount
 # Example: 2026/09/24 8858911200956 GREEK YOGURT BUTTERFLY Pieces 45.00 60 0.00 2,700.00
+# We capture: (1)Barcode (2)Description (3)UoM (4)Quantity (5)DirectCost (6)Discount (7)Amount
 _RE_PRODUCTS = re.compile(
-    r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+(Pieces|PCS|BOX|pcs|pieces)\s+([\d\.]+)\s+[\d\.]+\s+([\d,\.]+)\s+([\d,\.]+)"
+    r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+(Pieces|PCS|BOX|pcs|pieces)\s+([\d\.]+)\s+([\d\.]+)\s+([\d,\.]+)\s+([\d,\.]+)"
 )
 
 # Alternative pattern without UoM (flexible)
+# Captures: (1)Barcode (2)Description (3)Quantity (4)DirectCost (5)Discount (6)Amount
 _RE_FLEX = re.compile(
-    r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+([\d\.]+)\s+[\d\.]+\s+([\d,\.]+)\s+([\d,\.]+)"
+    r"\d{4}/\d{2}/\d{2}\s+(\d{13})\s+(.+?)\s+([\d\.]+)\s+([\d\.]+)\s+([\d,\.]+)\s+([\d,\.]+)"
 )
 
 # Count expected rows by barcodes
@@ -109,17 +111,16 @@ class LopiaParser(BasePOParser):
 
     def _extract_strict(self, text: str) -> list[ParsedLineItem]:
         items = []
-        for line_no, (barcode, desc, uom, qty, unit_cost, amount) in enumerate(
+        for line_no, (barcode, desc, uom, qty, direct_cost, discount, amount) in enumerate(
             _RE_PRODUCTS.findall(text), start=1
         ):
             qty_float = float(qty)
             qty_int = int(qty_float)
-            unit_cost_float = _to_float(unit_cost)
             amount_float = _to_float(amount)
 
-            # Calculate unit cost if not available (amount / quantity)
-            if unit_cost_float == 0 and qty_float > 0:
-                unit_cost_float = amount_float / qty_float
+            # Calculate actual unit cost from amount / quantity
+            # (DirectCost field in PDF might not be the actual unit cost)
+            unit_cost_float = amount_float / qty_float if qty_float > 0 else 0.0
 
             items.append(ParsedLineItem(
                 barcode=barcode,
@@ -135,17 +136,15 @@ class LopiaParser(BasePOParser):
 
     def _extract_flexible(self, text: str) -> list[ParsedLineItem]:
         items = []
-        for line_no, (barcode, desc, qty, unit_cost, amount) in enumerate(
+        for line_no, (barcode, desc, qty, direct_cost, discount, amount) in enumerate(
             _RE_FLEX.findall(text), start=1
         ):
             qty_float = float(qty)
             qty_int = int(qty_float)
-            unit_cost_float = _to_float(unit_cost)
             amount_float = _to_float(amount)
 
-            # Calculate unit cost if not available
-            if unit_cost_float == 0 and qty_float > 0:
-                unit_cost_float = amount_float / qty_float
+            # Calculate actual unit cost from amount / quantity
+            unit_cost_float = amount_float / qty_float if qty_float > 0 else 0.0
 
             items.append(ParsedLineItem(
                 barcode=barcode,
