@@ -32,55 +32,55 @@
         <button type="button" onclick="window.print()" style="background:#17a2b8;">🖨️ พิมพ์</button>
     </form>
 
-    <div style="overflow-x: auto; margin-top: 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+    <div style="width: 100%; overflow: visible; margin-top: 16px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 10px; table-layout: auto;">
             <thead>
                 <tr>
-                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; width: 60px; font-size: 13px;">รูป</th>
-                    <th rowspan="2" style="position: sticky; left: 60px; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; white-space: nowrap; font-size: 14px;">รายการสินค้า</th>
+                    <th rowspan="2" style="background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 3px; width: 40px; font-size: 10px;">รูป</th>
+                    <th rowspan="2" style="background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 3px; white-space: nowrap; font-size: 10px; max-width: 150px;">รายการสินค้า</th>
                     {% for store_name in store_names %}
-                        <th colspan="3" style="border: 1px solid #555; padding: 6px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 13px;">{{ store_name|truncatewords:3 }}</th>
+                        <th colspan="3" style="border: 1px solid #555; padding: 3px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 10px;">{{ store_name|truncatewords:2 }}</th>
                     {% endfor %}
-                    <th colspan="3" style="border: 1px solid #555; padding: 6px; background: #e67e22; color: #fff; font-weight: bold; font-size: 13px;">รวมทั้งหมด</th>
+                    <th colspan="3" style="border: 1px solid #555; padding: 3px; background: #e67e22; color: #fff; font-weight: bold; font-size: 10px;">รวม</th>
                 </tr>
                 <tr>
                     {% for store_name in store_names %}
-                        <th style="border: 1px solid #ddd; padding: 5px; background: #ecf0f1; font-size: 12px; min-width: 50px;">ยอดสั่ง</th>
-                        <th style="border: 1px solid #ddd; padding: 5px; background: #ffe6e6; font-size: 12px; min-width: 50px;">เคลม</th>
-                        <th style="border: 1px solid #ddd; padding: 5px; background: #e6f7ff; font-size: 12px; min-width: 50px;">ชดเชย</th>
+                        <th style="border: 1px solid #ddd; padding: 2px; background: #ecf0f1; font-size: 9px;">สั่ง</th>
+                        <th style="border: 1px solid #ddd; padding: 2px; background: #ffe6e6; font-size: 9px;">เคลม</th>
+                        <th style="border: 1px solid #ddd; padding: 2px; background: #e6f7ff; font-size: 9px;">ชดเชย</th>
                     {% endfor %}
-                    <th style="border: 1px solid #555; padding: 5px; background: #f39c12; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">ยอดสั่ง</th>
-                    <th style="border: 1px solid #555; padding: 5px; background: #e74c3c; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">เคลม</th>
-                    <th style="border: 1px solid #555; padding: 5px; background: #3498db; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">ชดเชย</th>
+                    <th style="border: 1px solid #555; padding: 2px; background: #f39c12; color: #fff; font-size: 9px; font-weight: bold;">สั่ง</th>
+                    <th style="border: 1px solid #555; padding: 2px; background: #e74c3c; color: #fff; font-size: 9px; font-weight: bold;">เคลม</th>
+                    <th style="border: 1px solid #555; padding: 2px; background: #3498db; color: #fff; font-size: 9px; font-weight: bold;">ชดเชย</th>
                 </tr>
             </thead>
             <tbody>
             {% for row in table_rows %}
                 <tr style="background: {% cycle '#ffffff' '#f8f9fa' %};">
-                    <td style="position: sticky; left: 0; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 6px;">
+                    <td style="background: {% cycle '#ffffff' '#f8f9fa' %}; border: 1px solid #dee2e6; text-align: center; padding: 2px;">
                         {% if row.product.image %}
-                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:30px; height:30px; object-fit:cover; border-radius:3px;">
                         {% else %}
-                            <span style="color:#ccc; font-size: 12px;">-</span>
+                            <span style="color:#ccc; font-size: 10px;">-</span>
                         {% endif %}
                     </td>
-                    <td style="position: sticky; left: 60px; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; padding: 8px; font-weight: 600; font-size: 13px; white-space: nowrap;" title="{{ row.product.description }}">{{ row.product.description }}</td>
+                    <td style="background: {% cycle '#ffffff' '#f8f9fa' %}; border: 1px solid #dee2e6; padding: 3px; font-weight: 600; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;" title="{{ row.product.description }}">{{ row.product.description }}</td>
                     {% for cell in row.cells %}
-                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.qty > 0 %}font-weight: bold; background: #d4edda;{% else %}background: #fff;{% endif %} font-size: 13px;">
+                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.qty > 0 %}font-weight: bold; background: #d4edda;{% else %}background: #fff;{% endif %} font-size: 10px;">
                             {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
                         </td>
-                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.claimed > 0 %}font-weight: bold; background: #f8d7da; color: #721c24;{% else %}background: #fff;{% endif %} font-size: 13px;">
+                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.claimed > 0 %}font-weight: bold; background: #f8d7da; color: #721c24;{% else %}background: #fff;{% endif %} font-size: 10px;">
                             {% if cell.claimed > 0 %}{{ cell.claimed }}{% else %}-{% endif %}
                         </td>
-                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.adjustment > 0 %}font-weight: bold; background: #d1ecf1; color: #0c5460;{% else %}background: #fff;{% endif %} font-size: 13px;">
+                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.adjustment > 0 %}font-weight: bold; background: #d1ecf1; color: #0c5460;{% else %}background: #fff;{% endif %} font-size: 10px;">
                             {% if cell.adjustment > 0 %}{{ cell.adjustment }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 14px;">{{ row.row_total }}</td>
-                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #f8d7da; font-weight: bold; font-size: 14px; color: #721c24;">
+                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 10px;">{{ row.row_total }}</td>
+                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #f8d7da; font-weight: bold; font-size: 10px; color: #721c24;">
                         {% if row.row_claimed_total > 0 %}{{ row.row_claimed_total }}{% else %}-{% endif %}
                     </td>
-                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #d1ecf1; font-weight: bold; font-size: 14px; color: #0c5460;">
+                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #d1ecf1; font-weight: bold; font-size: 10px; color: #0c5460;">
                         {% if row.row_adjustment_total > 0 %}{{ row.row_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
@@ -88,21 +88,21 @@
             </tbody>
             <tfoot>
                 <tr style="background: #34495e; color: #fff; font-weight: bold;">
-                    <td colspan="2" style="border: 1px solid #2c3e50; padding: 10px; text-align: right; font-size: 14px;">รวมทั้งหมด:</td>
+                    <td colspan="2" style="border: 1px solid #2c3e50; padding: 4px; text-align: right; font-size: 10px;">รวมทั้งหมด:</td>
                     {% for col in store_columns %}
-                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px;">{{ col.total }}</td>
-                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px; color: #e74c3c;">
+                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px;">{{ col.total }}</td>
+                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px; color: #e74c3c;">
                             {% if col.claimed_total > 0 %}{{ col.claimed_total }}{% else %}-{% endif %}
                         </td>
-                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px; color: #3498db;">
+                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px; color: #3498db;">
                             {% if col.adjustment_total > 0 %}{{ col.adjustment_total }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #f39c12; font-size: 16px; font-weight: bold;">{{ grand_total }}</td>
-                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #e74c3c; font-size: 16px; font-weight: bold;">
+                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #f39c12; font-size: 11px; font-weight: bold;">{{ grand_total }}</td>
+                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #e74c3c; font-size: 11px; font-weight: bold;">
                         {% if grand_claimed_total > 0 %}{{ grand_claimed_total }}{% else %}-{% endif %}
                     </td>
-                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #3498db; font-size: 16px; font-weight: bold;">
+                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #3498db; font-size: 11px; font-weight: bold;">
                         {% if grand_adjustment_total > 0 %}{{ grand_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
@@ -110,8 +110,8 @@
         </table>
     </div>
 
-    <p style="margin-top: 16px; font-size: 13px; color: #666;">
-        <strong>คำอธิบาย:</strong> ยอดสั่ง = จำนวนที่สั่งตาม PO (ปรับขั้นต่ำแล้ว) | เคลม = จำนวนที่เคลม | ชดเชย = จำนวนที่ชดเชย
+    <p style="margin-top: 12px; font-size: 11px; color: #666;">
+        <strong>คำอธิบาย:</strong> สั่ง = จำนวนที่สั่งตาม PO (ปรับขั้นต่ำแล้ว) | เคลม = จำนวนที่เคลม | ชดเชย = จำนวนที่ชดเชย
     </p>
 </div>
 
