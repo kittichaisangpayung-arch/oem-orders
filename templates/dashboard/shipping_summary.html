@@ -39,19 +39,17 @@
                     <th rowspan="2" style="background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 3px; width: 40px; font-size: 10px;">รูป</th>
                     <th rowspan="2" style="background: #2c3e50; color: #fff; border: 1px solid #34495e; padding: 3px; white-space: nowrap; font-size: 10px; max-width: 150px;">รายการสินค้า</th>
                     {% for store_name in store_names %}
-                        <th colspan="3" style="border: 1px solid #555; padding: 3px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 10px;">{{ store_name|truncatewords:2 }}</th>
+                        <th colspan="2" style="border: 1px solid #555; padding: 3px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 10px;">{{ store_name|truncatewords:2 }}</th>
                     {% endfor %}
-                    <th colspan="3" style="border: 1px solid #555; padding: 3px; background: #e67e22; color: #fff; font-weight: bold; font-size: 10px;">รวม</th>
+                    <th colspan="2" style="border: 1px solid #555; padding: 3px; background: #e67e22; color: #fff; font-weight: bold; font-size: 10px;">รวม</th>
                 </tr>
                 <tr>
                     {% for store_name in store_names %}
                         <th style="border: 1px solid #ddd; padding: 2px; background: #ecf0f1; font-size: 9px;">สั่ง</th>
-                        <th style="border: 1px solid #ddd; padding: 2px; background: #ffe6e6; font-size: 9px;">เคลม</th>
-                        <th style="border: 1px solid #ddd; padding: 2px; background: #e6f7ff; font-size: 9px;">ชดเชย</th>
+                        <th style="border: 1px solid #ddd; padding: 2px; background: #ffe6e6; font-size: 9px;">ชดเชย</th>
                     {% endfor %}
                     <th style="border: 1px solid #555; padding: 2px; background: #f39c12; color: #fff; font-size: 9px; font-weight: bold;">สั่ง</th>
-                    <th style="border: 1px solid #555; padding: 2px; background: #e74c3c; color: #fff; font-size: 9px; font-weight: bold;">เคลม</th>
-                    <th style="border: 1px solid #555; padding: 2px; background: #3498db; color: #fff; font-size: 9px; font-weight: bold;">ชดเชย</th>
+                    <th style="border: 1px solid #555; padding: 2px; background: #e74c3c; color: #fff; font-size: 9px; font-weight: bold;">ชดเชย</th>
                 </tr>
             </thead>
             <tbody>
@@ -69,19 +67,13 @@
                         <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.qty > 0 %}font-weight: bold; background: #d4edda;{% else %}background: #fff;{% endif %} font-size: 10px;">
                             {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
                         </td>
-                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.claimed > 0 %}font-weight: bold; background: #f8d7da; color: #721c24;{% else %}background: #fff;{% endif %} font-size: 10px;">
-                            {% if cell.claimed > 0 %}{{ cell.claimed }}{% else %}-{% endif %}
-                        </td>
-                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.adjustment > 0 %}font-weight: bold; background: #d1ecf1; color: #0c5460;{% else %}background: #fff;{% endif %} font-size: 10px;">
-                            {% if cell.adjustment > 0 %}{{ cell.adjustment }}{% else %}-{% endif %}
+                        <td style="border: 1px solid #dee2e6; padding: 2px; text-align: center; {% if cell.claimed > 0 or cell.adjustment > 0 %}font-weight: bold; background: #fff3cd; color: #856404;{% else %}background: #fff;{% endif %} font-size: 10px;">
+                            {% if cell.claimed > 0 or cell.adjustment > 0 %}{{ cell.claimed|add:cell.adjustment }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 10px;">{{ row.row_total }}</td>
-                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #f8d7da; font-weight: bold; font-size: 10px; color: #721c24;">
-                        {% if row.row_claimed_total > 0 %}{{ row.row_claimed_total }}{% else %}-{% endif %}
-                    </td>
-                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #d1ecf1; font-weight: bold; font-size: 10px; color: #0c5460;">
-                        {% if row.row_adjustment_total > 0 %}{{ row.row_adjustment_total }}{% else %}-{% endif %}
+                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #d4edda; font-weight: bold; font-size: 10px;">{{ row.row_total }}</td>
+                    <td style="border: 1px solid #555; padding: 2px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 10px; color: #856404;">
+                        {% if row.row_claimed_total > 0 or row.row_adjustment_total > 0 %}{{ row.row_claimed_total|add:row.row_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
             {% endfor %}
@@ -91,19 +83,13 @@
                     <td colspan="2" style="border: 1px solid #2c3e50; padding: 4px; text-align: right; font-size: 10px;">รวมทั้งหมด:</td>
                     {% for col in store_columns %}
                         <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px;">{{ col.total }}</td>
-                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px; color: #e74c3c;">
-                            {% if col.claimed_total > 0 %}{{ col.claimed_total }}{% else %}-{% endif %}
-                        </td>
-                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px; color: #3498db;">
-                            {% if col.adjustment_total > 0 %}{{ col.adjustment_total }}{% else %}-{% endif %}
+                        <td style="border: 1px solid #2c3e50; padding: 3px; text-align: center; font-weight: bold; font-size: 10px; color: #ffc107;">
+                            {% if col.claimed_total > 0 or col.adjustment_total > 0 %}{{ col.claimed_total|add:col.adjustment_total }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #f39c12; font-size: 11px; font-weight: bold;">{{ grand_total }}</td>
-                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #e74c3c; font-size: 11px; font-weight: bold;">
-                        {% if grand_claimed_total > 0 %}{{ grand_claimed_total }}{% else %}-{% endif %}
-                    </td>
-                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #3498db; font-size: 11px; font-weight: bold;">
-                        {% if grand_adjustment_total > 0 %}{{ grand_adjustment_total }}{% else %}-{% endif %}
+                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #28a745; font-size: 11px; font-weight: bold;">{{ grand_total }}</td>
+                    <td style="border: 1px solid #2c3e50; padding: 4px; text-align: center; background: #ffc107; font-size: 11px; font-weight: bold; color: #000;">
+                        {% if grand_claimed_total > 0 or grand_adjustment_total > 0 %}{{ grand_claimed_total|add:grand_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
             </tfoot>
@@ -111,7 +97,7 @@
     </div>
 
     <p style="margin-top: 12px; font-size: 11px; color: #666;">
-        <strong>คำอธิบาย:</strong> สั่ง = จำนวนที่สั่งตาม PO (ปรับขั้นต่ำแล้ว) | เคลม = จำนวนที่เคลม | ชดเชย = จำนวนที่ชดเชย
+        <strong>คำอธิบาย:</strong> สั่ง = จำนวนที่สั่งตาม PO (ปรับขั้นต่ำแล้ว) | ชดเชย = เคลม + ชดเชย (รวมกัน)
     </p>
 </div>
 
