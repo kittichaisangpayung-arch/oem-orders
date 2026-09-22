@@ -36,8 +36,8 @@
         <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
                 <tr>
-                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; width: 60px; font-size: 13px;">รูป</th>
-                    <th rowspan="2" style="position: sticky; left: 60px; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; min-width: 200px; font-size: 14px;">รายการสินค้า</th>
+                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; width: 80px; font-size: 13px;">รูป</th>
+                    <th rowspan="2" style="position: sticky; left: 80px; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; white-space: nowrap; font-size: 14px;">รายการสินค้า</th>
                     {% for store_name in store_names %}
                         <th colspan="3" style="border: 1px solid #555; padding: 6px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 13px;">{{ store_name|truncatewords:3 }}</th>
                     {% endfor %}
@@ -57,14 +57,14 @@
             <tbody>
             {% for row in table_rows %}
                 <tr style="background: {% cycle '#ffffff' '#f8f9fa' %};">
-                    <td style="position: sticky; left: 0; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 6px;">
+                    <td style="position: sticky; left: 0; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 8px;">
                         {% if row.product.image %}
-                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
+                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:60px; height:60px; object-fit:cover; border-radius:6px;">
                         {% else %}
-                            <span style="color:#ccc; font-size: 12px;">-</span>
+                            <span style="color:#ccc; font-size: 14px;">-</span>
                         {% endif %}
                     </td>
-                    <td style="position: sticky; left: 60px; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; padding: 8px; font-weight: 600; font-size: 13px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ row.product.description }}">{{ row.product.description }}</td>
+                    <td style="position: sticky; left: 80px; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; padding: 8px; font-weight: 600; font-size: 13px; white-space: nowrap;" title="{{ row.product.description }}">{{ row.product.description }}</td>
                     {% for cell in row.cells %}
                         <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.qty > 0 %}font-weight: bold; background: #d4edda;{% else %}background: #fff;{% endif %} font-size: 13px;">
                             {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
