@@ -535,12 +535,13 @@ def store_matrix(request):
             if overridden:
                 display_qty = overrides[(pid, sid)]
                 adjusted = False
-            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
-                # Only apply minimum if store actually ordered (qty > 0)
+            elif qty > 0 and minimum > 0 and qty < minimum:
+                # Apply minimum only to actual order qty (not including claims/compensations)
                 display_qty = minimum
                 adjusted = True
             else:
-                display_qty = net_qty
+                # Show only order qty, not including claims/compensations
+                display_qty = qty
                 adjusted = False
 
             # For adjusted amount calculation: use original qty adjusted to minimum (not including claims)
@@ -551,7 +552,7 @@ def store_matrix(request):
             else:
                 adjusted_qty_for_amount = qty
 
-            # Accumulate adjusted quantity (display_qty includes claims) and amount (without claims)
+            # Accumulate adjusted quantity (display_qty is order only, with minimum applied) and amount
             store_adjusted_totals[sid] += display_qty
             store_adjusted_amounts[sid] += Decimal(str(adjusted_qty_for_amount)) * Decimal(str(unit_price))
 
