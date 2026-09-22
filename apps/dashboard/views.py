@@ -836,7 +836,7 @@ def factory_summary(request):
 
     for pid, p in products.items():
         original_total = 0
-        adjusted_total_before_claim = 0
+        adjusted_order_total = 0  # Order qty with minimum adjustments (NO claims/compensations)
         claimed_total = claimed_by_product.get(pid, 0)
         compensated_total = compensated_by_product.get(pid, 0)
 
@@ -844,24 +844,23 @@ def factory_summary(request):
             qty = matrix[pid].get(sid, 0)
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
 
             original_total += qty
 
-            # Apply override or minimum adjustment per store (including claims and compensations)
+            # Calculate adjusted order qty (PO only, with minimum - NO claims/compensations)
             if (pid, sid) in overrides:
-                final_qty = overrides[(pid, sid)] + claimed + compensated
-                adjusted_total_before_claim += final_qty
-            elif qty > 0 and net_qty > 0 and minimum > 0 and net_qty < minimum:
+                adjusted_order_qty = overrides[(pid, sid)]
+            elif qty > 0 and minimum > 0 and qty < minimum:
                 # Only apply minimum if store actually ordered (qty > 0)
-                # Minimum already accounts for net_qty which includes compensations
-                adjusted_total_before_claim += minimum
+                adjusted_order_qty = minimum
             else:
-                adjusted_total_before_claim += net_qty
+                adjusted_order_qty = qty
 
-        # Final net qty already includes both claims and compensations
-        final_net_qty = adjusted_total_before_claim
+            adjusted_order_total += adjusted_order_qty
+
+        # Final net qty = adjusted order - claims + compensations
+        final_net_qty = adjusted_order_total - claimed_total + compensated_total
 
         group_name = p["product_group"] or "ไม่ระบุกลุ่ม"
 
@@ -870,10 +869,10 @@ def factory_summary(request):
             "barcode": p["barcode"],
             "description": p["description"],
             "image": p["image"],
-            "total_qty2": adjusted_total_before_claim,  # Adjusted order qty (after min adjustment)
+            "total_qty2": adjusted_order_total,  # Adjusted order qty (PO only, with minimum)
             "claimed_qty": claimed_total,
             "compensated_qty": compensated_total,
-            "net_qty2": final_net_qty,  # Adjusted - claims + compensations
+            "net_qty2": final_net_qty,  # Adjusted order - claims + compensations
         }
 
         groups_data[group_name]["group_name"] = group_name
