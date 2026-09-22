@@ -1031,19 +1031,20 @@ def shipping_summary(request):
     # Build shipping table with adjusted quantities - now shows ALL products and ALL stores
     table_rows = []
     store_totals = defaultdict(int)
+    store_claimed_totals = defaultdict(int)
     store_adjustment_totals = defaultdict(int)
 
     for pid in sorted_product_ids:
         p = products[pid]
         cells = []
         row_total = 0
+        row_claimed_total = 0
         row_adjustment_total = 0
 
         for sid in sorted_store_ids:
             qty = matrix[pid].get(sid, 0)  # Will be 0 if not ordered
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensated_by_product_store.get((pid, sid), 0)
-            net_adjustment = claimed + compensated  # Combined claims + compensation
             net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
 
@@ -1068,23 +1069,28 @@ def shipping_summary(request):
 
             cells.append({
                 'qty': display_qty,  # Order qty only, with minimum if ordered
-                'adjustment': net_adjustment,  # Combined claims + compensation
+                'claimed': claimed,  # Claim qty separate
+                'adjustment': compensated,  # Compensation qty separate
             })
             row_total += net_for_total
-            row_adjustment_total += net_adjustment
+            row_claimed_total += claimed
+            row_adjustment_total += compensated
             store_totals[sid] += net_for_total
-            store_adjustment_totals[sid] += net_adjustment
+            store_claimed_totals[sid] += claimed
+            store_adjustment_totals[sid] += compensated
 
         # Add row even if row_total is 0 to show all products
         table_rows.append({
             "product": p,
             "cells": cells,
             "row_total": row_total,
+            "row_claimed_total": row_claimed_total,
             "row_adjustment_total": row_adjustment_total,
         })
 
     # Calculate grand total
     grand_total = sum(store_totals.values())
+    grand_claimed_total = sum(store_claimed_totals.values())
     grand_adjustment_total = sum(store_adjustment_totals.values())
 
     # Prepare store columns with totals for easier template iteration
@@ -1092,6 +1098,7 @@ def shipping_summary(request):
         {
             "name": stores[sid],
             "total": store_totals[sid],
+            "claimed_total": store_claimed_totals[sid],
             "adjustment_total": store_adjustment_totals[sid],
         }
         for sid in sorted_store_ids
@@ -1102,6 +1109,7 @@ def shipping_summary(request):
         "store_columns": store_columns,
         "table_rows": table_rows,
         "grand_total": grand_total,
+        "grand_claimed_total": grand_claimed_total,
         "grand_adjustment_total": grand_adjustment_total,
         "batches": PurchaseOrderBatch.objects.order_by("-uploaded_at")[:30],
         "customers": Customer.objects.filter(is_active=True),

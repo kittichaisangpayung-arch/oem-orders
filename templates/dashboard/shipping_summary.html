@@ -33,62 +33,76 @@
     </form>
 
     <div style="overflow-x: auto; margin-top: 16px;">
-        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
             <thead>
                 <tr>
-                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 2px solid #34495e; padding: 4px; width: 45px; font-size: 10px;">รูป</th>
-                    <th rowspan="2" style="position: sticky; left: 45px; background: #2c3e50; color: #fff; z-index: 10; border: 2px solid #34495e; padding: 4px; min-width: 150px; max-width: 180px; font-size: 11px;">รายการสินค้า</th>
+                    <th rowspan="2" style="position: sticky; left: 0; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; width: 60px; font-size: 13px;">รูป</th>
+                    <th rowspan="2" style="position: sticky; left: 60px; background: #2c3e50; color: #fff; z-index: 10; border: 1px solid #34495e; padding: 8px; min-width: 200px; font-size: 14px;">รายการสินค้า</th>
                     {% for store_name in store_names %}
-                        <th colspan="2" style="border: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 3px; background: {% cycle '#e3f2fd' '#fff3e0' %}; text-align: center; font-weight: bold; font-size: 10px; max-width: 80px;">{{ store_name|truncatewords:2 }}</th>
+                        <th colspan="3" style="border: 1px solid #555; padding: 6px; background: #3498db; color: #fff; text-align: center; font-weight: bold; font-size: 13px;">{{ store_name|truncatewords:3 }}</th>
                     {% endfor %}
-                    <th colspan="2" style="border: 2px solid #856404; padding: 3px; background: #fff3cd; font-weight: bold; font-size: 10px;">รวม</th>
+                    <th colspan="3" style="border: 1px solid #555; padding: 6px; background: #e67e22; color: #fff; font-weight: bold; font-size: 13px;">รวมทั้งหมด</th>
                 </tr>
                 <tr>
                     {% for store_name in store_names %}
-                        <th style="border-right: 1px solid #ddd; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 2px; background: {% cycle '#bbdefb' '#ffe0b2' %}; font-size: 9px; width: 35px;">รวม</th>
-                        <th style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 2px; background: {% cycle '#e1bee7' '#ce93d8' %}; font-size: 9px; width: 35px;">ชด</th>
+                        <th style="border: 1px solid #ddd; padding: 5px; background: #ecf0f1; font-size: 12px; min-width: 50px;">ยอดสั่ง</th>
+                        <th style="border: 1px solid #ddd; padding: 5px; background: #ffe6e6; font-size: 12px; min-width: 50px;">เคลม</th>
+                        <th style="border: 1px solid #ddd; padding: 5px; background: #e6f7ff; font-size: 12px; min-width: 50px;">ชดเชย</th>
                     {% endfor %}
-                    <th style="border: 2px solid #856404; border-top: none; padding: 2px; background: #fff9e6; font-size: 9px; font-weight: bold; width: 40px;">รวม</th>
-                    <th style="border: 2px solid #856404; border-top: none; border-left: 1px solid #856404; padding: 2px; background: #f3e5f5; font-size: 9px; font-weight: bold; width: 40px;">ชด</th>
+                    <th style="border: 1px solid #555; padding: 5px; background: #f39c12; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">ยอดสั่ง</th>
+                    <th style="border: 1px solid #555; padding: 5px; background: #e74c3c; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">เคลม</th>
+                    <th style="border: 1px solid #555; padding: 5px; background: #3498db; color: #fff; font-size: 12px; font-weight: bold; min-width: 60px;">ชดเชย</th>
                 </tr>
             </thead>
             <tbody>
             {% for row in table_rows %}
-                <tr>
-                    <td style="position: sticky; left: 0; background: #fff; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 2px;">
+                <tr style="background: {% cycle '#ffffff' '#f8f9fa' %};">
+                    <td style="position: sticky; left: 0; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; text-align: center; padding: 6px;">
                         {% if row.product.image %}
-                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:30px; height:30px; object-fit:cover; border-radius:3px;">
+                            <img src="/media/{{ row.product.image }}" alt="{{ row.product.description }}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
                         {% else %}
-                            <span style="color:#ccc; font-size: 10px;">-</span>
+                            <span style="color:#ccc; font-size: 12px;">-</span>
                         {% endif %}
                     </td>
-                    <td style="position: sticky; left: 45px; background: #fff; z-index: 5; border: 1px solid #dee2e6; padding: 4px; font-weight: bold; font-size: 10px; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ row.product.description }}">{{ row.product.description }}</td>
+                    <td style="position: sticky; left: 60px; background: {% cycle '#ffffff' '#f8f9fa' %}; z-index: 5; border: 1px solid #dee2e6; padding: 8px; font-weight: 600; font-size: 13px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ row.product.description }}">{{ row.product.description }}</td>
                     {% for cell in row.cells %}
-                        <td style="border-right: 1px solid #ddd; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 3px; text-align: center; background: {% if cell.qty > 0 %}{% cycle '#e3f2fd' '#fff3e0' %}{% else %}#fff{% endif %}; {% if cell.qty > 0 %}font-weight: bold;{% endif %} font-size: 11px;">
+                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.qty > 0 %}font-weight: bold; background: #d4edda;{% else %}background: #fff;{% endif %} font-size: 13px;">
                             {% if cell.qty > 0 %}{{ cell.qty }}{% else %}-{% endif %}
                         </td>
-                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 1px solid #dee2e6; border-bottom: 1px solid #dee2e6; padding: 3px; text-align: center; background: {% if cell.adjustment > 0 %}{% cycle '#f3e5f5' '#e1bee7' %}{% else %}#f9f9f9{% endif %}; {% if cell.adjustment > 0 %}font-weight: bold;{% endif %} font-size: 11px;">
+                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.claimed > 0 %}font-weight: bold; background: #f8d7da; color: #721c24;{% else %}background: #fff;{% endif %} font-size: 13px;">
+                            {% if cell.claimed > 0 %}{{ cell.claimed }}{% else %}-{% endif %}
+                        </td>
+                        <td style="border: 1px solid #dee2e6; padding: 6px; text-align: center; {% if cell.adjustment > 0 %}font-weight: bold; background: #d1ecf1; color: #0c5460;{% else %}background: #fff;{% endif %} font-size: 13px;">
                             {% if cell.adjustment > 0 %}{{ cell.adjustment }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 3px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 11px;">{{ row.row_total }}</td>
-                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 3px; text-align: center; background: #f3e5f5; {% if row.row_adjustment_total > 0 %}font-weight: bold;{% endif %} font-size: 11px;">
+                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #fff3cd; font-weight: bold; font-size: 14px;">{{ row.row_total }}</td>
+                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #f8d7da; font-weight: bold; font-size: 14px; color: #721c24;">
+                        {% if row.row_claimed_total > 0 %}{{ row.row_claimed_total }}{% else %}-{% endif %}
+                    </td>
+                    <td style="border: 1px solid #555; padding: 6px; text-align: center; background: #d1ecf1; font-weight: bold; font-size: 14px; color: #0c5460;">
                         {% if row.row_adjustment_total > 0 %}{{ row.row_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
             {% endfor %}
             </tbody>
             <tfoot>
-                <tr style="background: #f8f9fa; font-weight: bold;">
-                    <td colspan="2" style="border: 2px solid #34495e; padding: 3px; text-align: right; background: #ecf0f1; font-size: 11px;">รวมทั้งหมด:</td>
+                <tr style="background: #34495e; color: #fff; font-weight: bold;">
+                    <td colspan="2" style="border: 1px solid #2c3e50; padding: 10px; text-align: right; font-size: 14px;">รวมทั้งหมด:</td>
                     {% for col in store_columns %}
-                        <td style="border-right: 1px solid #ddd; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; border-left: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 3px; text-align: center; background: {% cycle '#bbdefb' '#ffe0b2' %}; font-weight: bold; font-size: 11px;">{{ col.total }}</td>
-                        <td style="border-right: 2px solid {% cycle '#6c757d' '#495057' %}; border-top: 2px solid {% cycle '#6c757d' '#495057' %}; border-bottom: 2px solid {% cycle '#6c757d' '#495057' %}; padding: 3px; text-align: center; background: {% cycle '#e1bee7' '#ce93d8' %}; font-weight: bold; font-size: 11px;">
+                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px;">{{ col.total }}</td>
+                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px; color: #e74c3c;">
+                            {% if col.claimed_total > 0 %}{{ col.claimed_total }}{% else %}-{% endif %}
+                        </td>
+                        <td style="border: 1px solid #2c3e50; padding: 8px; text-align: center; font-weight: bold; font-size: 14px; color: #3498db;">
                             {% if col.adjustment_total > 0 %}{{ col.adjustment_total }}{% else %}-{% endif %}
                         </td>
                     {% endfor %}
-                    <td style="border: 2px solid #856404; border-right: 1px solid #856404; padding: 3px; text-align: center; background: #ffc107; font-size: 14px; font-weight: bold;">{{ grand_total }}</td>
-                    <td style="border: 2px solid #856404; border-left: 1px solid #856404; padding: 3px; text-align: center; background: #9c27b0; color: #fff; font-size: 14px; font-weight: bold;">
+                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #f39c12; font-size: 16px; font-weight: bold;">{{ grand_total }}</td>
+                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #e74c3c; font-size: 16px; font-weight: bold;">
+                        {% if grand_claimed_total > 0 %}{{ grand_claimed_total }}{% else %}-{% endif %}
+                    </td>
+                    <td style="border: 1px solid #2c3e50; padding: 10px; text-align: center; background: #3498db; font-size: 16px; font-weight: bold;">
                         {% if grand_adjustment_total > 0 %}{{ grand_adjustment_total }}{% else %}-{% endif %}
                     </td>
                 </tr>
@@ -97,7 +111,7 @@
     </div>
 
     <p style="margin-top: 16px; font-size: 13px; color: #666;">
-        ตารางนี้แสดงจำนวนสินค้าที่ต้องขนส่งไปแต่ละสาขา (คอลัมน์ "รวม" = ยอดสั่ง - เคลม + ชดเชย หลังปรับขั้นต่ำ, คอลัมน์ "เคลม" = ยอดเคลมอย่างเดียว, คอลัมน์ "ชดเชย" = ยอดชดเชยอย่างเดียว)
+        <strong>คำอธิบาย:</strong> ยอดสั่ง = จำนวนที่สั่งตาม PO (ปรับขั้นต่ำแล้ว) | เคลม = จำนวนที่เคลม | ชดเชย = จำนวนที่ชดเชย
     </p>
 </div>
 
