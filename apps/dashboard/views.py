@@ -859,8 +859,8 @@ def factory_summary(request):
 
             adjusted_order_total += adjusted_order_qty
 
-        # Final net qty = adjusted order - claims + compensations
-        final_net_qty = adjusted_order_total - claimed_total + compensated_total
+        # Final net qty = adjusted order + claims + compensations
+        final_net_qty = adjusted_order_total + claimed_total + compensated_total
 
         group_name = p["product_group"] or "ไม่ระบุกลุ่ม"
 
@@ -872,7 +872,7 @@ def factory_summary(request):
             "total_qty2": adjusted_order_total,  # Adjusted order qty (PO only, with minimum)
             "claimed_qty": claimed_total,
             "compensated_qty": compensated_total,
-            "net_qty2": final_net_qty,  # Adjusted order - claims + compensations
+            "net_qty2": final_net_qty,  # Adjusted order + claims + compensations
         }
 
         groups_data[group_name]["group_name"] = group_name
