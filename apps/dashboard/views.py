@@ -713,6 +713,96 @@ def add_compensation_inline(request):
     return redirect(f"{reverse('dashboard:store_matrix')}?batch={batch_id}")
 
 
+@login_required
+def set_claim(request):
+    """Set claim quantity for a product-store combination (inline edit from table)."""
+    if request.method != "POST" or not staff_required(request.user):
+        return render(request, "claims/forbidden.html", status=403)
+
+    batch_id = request.POST.get("batch")
+    product_id = request.POST.get("product_id")
+    store_id = request.POST.get("store_id")
+    claim_qty = request.POST.get("claim_qty")
+
+    if batch_id and product_id and store_id and claim_qty is not None:
+        try:
+            claim_qty = int(claim_qty)
+
+            # Get ANY purchase order for this batch and store
+            po = PurchaseOrder.objects.filter(
+                batch_id=batch_id,
+                store_id=store_id
+            ).first()
+
+            if po:
+                # Delete existing claims for this product-store-batch combination
+                Claim.objects.filter(
+                    purchase_order__batch_id=batch_id,
+                    store_id=store_id,
+                    product_id=product_id
+                ).delete()
+
+                # Create new claim if quantity > 0
+                if claim_qty > 0:
+                    Claim.objects.create(
+                        purchase_order=po,
+                        store_id=store_id,
+                        product_id=product_id,
+                        qty=claim_qty,
+                        note=f"Set from store matrix (batch #{batch_id})",
+                        created_by=request.user,
+                    )
+        except Exception as e:
+            print(f"Error setting claim: {type(e).__name__}: {e}")
+
+    return redirect(f"{reverse('dashboard:store_matrix')}?batch={batch_id}")
+
+
+@login_required
+def set_compensation(request):
+    """Set compensation quantity for a product-store combination (inline edit from table)."""
+    if request.method != "POST" or not staff_required(request.user):
+        return render(request, "claims/forbidden.html", status=403)
+
+    batch_id = request.POST.get("batch")
+    product_id = request.POST.get("product_id")
+    store_id = request.POST.get("store_id")
+    compensation_qty = request.POST.get("compensation_qty")
+
+    if batch_id and product_id and store_id and compensation_qty is not None:
+        try:
+            compensation_qty = int(compensation_qty)
+
+            # Get ANY purchase order for this batch and store
+            po = PurchaseOrder.objects.filter(
+                batch_id=batch_id,
+                store_id=store_id
+            ).first()
+
+            if po:
+                # Delete existing compensations for this product-store-batch combination
+                Compensation.objects.filter(
+                    purchase_order__batch_id=batch_id,
+                    store_id=store_id,
+                    product_id=product_id
+                ).delete()
+
+                # Create new compensation if quantity > 0
+                if compensation_qty > 0:
+                    Compensation.objects.create(
+                        purchase_order=po,
+                        store_id=store_id,
+                        product_id=product_id,
+                        qty=compensation_qty,
+                        note=f"Set from store matrix (batch #{batch_id})",
+                        created_by=request.user,
+                    )
+        except Exception as e:
+            print(f"Error setting compensation: {type(e).__name__}: {e}")
+
+    return redirect(f"{reverse('dashboard:store_matrix')}?batch={batch_id}")
+
+
 
 @login_required
 def factory_summary(request):
