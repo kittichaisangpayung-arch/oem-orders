@@ -21,23 +21,29 @@
                 </select>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div>
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">เดือน: <span style="color: red;">*</span></label>
-                    <select name="invoice_month" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                        {% for m in "123456789" %}
-                        <option value="{{ m }}" {% if m|add:"0" == current_month %}selected{% endif %}>{{ m }}</option>
-                        {% endfor %}
-                        <option value="10" {% if current_month == 10 %}selected{% endif %}>10</option>
-                        <option value="11" {% if current_month == 11 %}selected{% endif %}>11</option>
-                        <option value="12" {% if current_month == 12 %}selected{% endif %}>12</option>
-                    </select>
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">ปี: <span style="color: red;">*</span></label>
-                    <input type="number" name="invoice_year" value="{{ current_year }}" required min="2020" max="2030"
-                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
-                </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">PO Number:</label>
+                <input type="text" name="po_numbers" placeholder="ใส่เลข PO (ถ้ามี)"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">เดือน: <span style="color: red;">*</span></label>
+                <select name="invoice_month" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    {% for m in "123456789" %}
+                    <option value="{{ m }}" {% if m|add:"0" == current_month %}selected{% endif %}>{{ m }}</option>
+                    {% endfor %}
+                    <option value="10" {% if current_month == 10 %}selected{% endif %}>10</option>
+                    <option value="11" {% if current_month == 11 %}selected{% endif %}>11</option>
+                    <option value="12" {% if current_month == 12 %}selected{% endif %}>12</option>
+                </select>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">ปี: <span style="color: red;">*</span></label>
+                <input type="number" name="invoice_year" value="{{ current_year }}" required min="2020" max="2030"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
             </div>
         </div>
 
