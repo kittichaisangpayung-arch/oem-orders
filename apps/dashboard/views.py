@@ -2076,8 +2076,8 @@ def create_invoice_from_selected_dns(request):
         dn_items = dn.items.select_related('product').all()
 
         for dn_item in dn_items:
-            # Calculate amount for this item (price * quantity)
-            item_amount = dn_item.price * dn_item.quantity
+            # Use the amount from delivery note item
+            item_amount = dn_item.amount
 
             # Create invoice line item for each product
             InvoiceLineItem.objects.create(
