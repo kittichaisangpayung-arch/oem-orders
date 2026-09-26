@@ -2002,11 +2002,9 @@ def create_invoice_from_selected_dns(request):
 
         if customer_id:
             selected_customer = get_object_or_404(Customer, pk=customer_id)
-            # Get all delivery notes for this customer that are not yet in any invoice
+            # Get all delivery notes for this customer
             delivery_notes = DeliveryNote.objects.filter(
                 store__customer=selected_customer
-            ).exclude(
-                invoice_items__isnull=False
             ).prefetch_related("items__product").order_by("-created_at")
 
         # Get current year and month for defaults
