@@ -1834,6 +1834,231 @@ def invoice_receipt(request, invoice_id):
 
 
 @login_required
+def create_manual_invoice(request):
+    """Create invoice manually without delivery notes"""
+    from .models import Invoice, InvoiceLineItem
+    from apps.core.models import Customer
+    from django.contrib import messages
+    import json
+
+    if request.method != "POST":
+        # Show form
+        customers = Customer.objects.filter(is_active=True).order_by("name")
+
+        # Get current year and month for defaults
+        from datetime import date
+        today = date.today()
+
+        context = {
+            "customers": customers,
+            "current_year": today.year,
+            "current_month": today.month,
+        }
+        return render(request, "dashboard/create_manual_invoice.html", context)
+
+    # Process form submission
+    customer_id = request.POST.get("customer_id")
+    year = int(request.POST.get("invoice_year"))
+    month = int(request.POST.get("invoice_month"))
+
+    customer = get_object_or_404(Customer, pk=customer_id)
+
+    # Check if invoice already exists for this customer and month
+    existing = Invoice.objects.filter(
+        customer=customer,
+        invoice_year=year,
+        invoice_month=month
+    ).first()
+
+    if existing:
+        messages.warning(request, f"Invoice สำหรับ {customer.name} เดือน {month}/{year} มีอยู่แล้ว")
+        return redirect("dashboard:invoice_detail", invoice_id=existing.id)
+
+    # Get line items from form (JavaScript will send as JSON)
+    line_items_json = request.POST.get("line_items", "[]")
+    line_items_data = json.loads(line_items_json)
+
+    if not line_items_data:
+        messages.error(request, "กรุณาเพิ่มรายการสินค้าอย่างน้อย 1 รายการ")
+        return redirect("dashboard:create_manual_invoice")
+
+    # Create invoice
+    invoice = Invoice.objects.create(
+        customer=customer,
+        invoice_month=month,
+        invoice_year=year,
+        billing_address=customer.head_office_address or "",
+        customer_tax_id=customer.tax_id or "",
+        subtotal=Decimal('0'),
+        vat_amount=Decimal('0'),
+        grand_total=Decimal('0'),
+        created_by=request.user,
+    )
+
+    # Create line items
+    subtotal = Decimal('0')
+    for idx, item_data in enumerate(line_items_data, 1):
+        description = item_data.get('description', '')
+        quantity = int(item_data.get('quantity', 0))
+        unit = item_data.get('unit', 'PCS')
+        amount = Decimal(str(item_data.get('amount', 0)))
+
+        InvoiceLineItem.objects.create(
+            invoice=invoice,
+            delivery_note=None,  # Manual invoice has no delivery note
+            description=description,
+            quantity=quantity,
+            unit=unit,
+            amount=amount,
+            line_no=idx,
+        )
+
+        subtotal += amount
+
+    # Calculate totals
+    vat_rate = Decimal('7.00')
+    vat_amount = subtotal * (vat_rate / Decimal('100'))
+    grand_total = subtotal + vat_amount
+
+    invoice.subtotal = subtotal
+    invoice.vat_amount = vat_amount
+    invoice.grand_total = grand_total
+    invoice.save()
+
+    messages.success(request, f"สร้าง Invoice {invoice.invoice_number} สำเร็จ")
+    return redirect("dashboard:invoice_detail", invoice_id=invoice.id)
+
+
+@login_required
+def create_invoice_from_selected_dns(request):
+    """Create invoice by selecting specific delivery notes"""
+    from .models import Invoice, InvoiceLineItem
+    from apps.core.models import Customer
+    from django.contrib import messages
+    from datetime import date
+
+    if request.method != "POST":
+        # Show form to select customer and see their delivery notes
+        customer_id = request.GET.get('customer_id')
+
+        customers = Customer.objects.filter(is_active=True).order_by("name")
+        delivery_notes = []
+        selected_customer = None
+
+        if customer_id:
+            selected_customer = get_object_or_404(Customer, pk=customer_id)
+            # Get all delivery notes for this customer that are not yet in any invoice
+            delivery_notes = DeliveryNote.objects.filter(
+                store__customer=selected_customer
+            ).exclude(
+                invoice_items__isnull=False
+            ).prefetch_related("items__product").order_by("-created_at")
+
+        # Get current year and month for defaults
+        today = date.today()
+
+        context = {
+            "customers": customers,
+            "delivery_notes": delivery_notes,
+            "selected_customer": selected_customer,
+            "current_year": today.year,
+            "current_month": today.month,
+        }
+        return render(request, "dashboard/create_invoice_from_selected_dns.html", context)
+
+    # Process form submission
+    customer_id = request.POST.get("customer_id")
+    year = int(request.POST.get("invoice_year"))
+    month = int(request.POST.get("invoice_month"))
+    dn_ids = request.POST.getlist("delivery_note_ids")
+
+    if not dn_ids:
+        messages.error(request, "กรุณาเลือก Delivery Notes อย่างน้อย 1 รายการ")
+        return redirect(f"{reverse('dashboard:create_invoice_from_selected_dns')}?customer_id={customer_id}")
+
+    customer = get_object_or_404(Customer, pk=customer_id)
+
+    # Check if invoice already exists for this customer and month
+    existing = Invoice.objects.filter(
+        customer=customer,
+        invoice_year=year,
+        invoice_month=month
+    ).first()
+
+    if existing:
+        messages.warning(request, f"Invoice สำหรับ {customer.name} เดือน {month}/{year} มีอยู่แล้ว")
+        return redirect("dashboard:invoice_detail", invoice_id=existing.id)
+
+    # Get selected delivery notes
+    delivery_notes = DeliveryNote.objects.filter(
+        id__in=dn_ids,
+        store__customer=customer
+    ).prefetch_related("items__product")
+
+    if not delivery_notes.exists():
+        messages.error(request, "ไม่พบ Delivery Notes ที่เลือก")
+        return redirect("dashboard:create_invoice_from_selected_dns")
+
+    # Create invoice
+    invoice = Invoice.objects.create(
+        customer=customer,
+        invoice_month=month,
+        invoice_year=year,
+        billing_address=customer.head_office_address or "",
+        customer_tax_id=customer.tax_id or "",
+        subtotal=Decimal('0'),
+        vat_amount=Decimal('0'),
+        grand_total=Decimal('0'),
+        created_by=request.user,
+    )
+
+    # Create line items from selected delivery notes
+    subtotal = Decimal('0')
+    line_no = 1
+
+    for dn in delivery_notes:
+        # Get product groups from DN items
+        items = dn.items.all()
+        product_groups = set()
+        total_qty = 0
+
+        for item in items:
+            if item.product.product_group:
+                product_groups.add(item.product.product_group)
+            total_qty += item.quantity
+
+        # Create description from product groups
+        description = " & ".join(sorted(product_groups)) if product_groups else "สินค้าทั่วไป"
+
+        # Create invoice line item
+        InvoiceLineItem.objects.create(
+            invoice=invoice,
+            delivery_note=dn,
+            description=description,
+            quantity=total_qty,
+            unit="PCS",
+            amount=dn.grand_total,
+            line_no=line_no,
+        )
+
+        subtotal += dn.subtotal
+        line_no += 1
+
+    # Calculate totals
+    vat_rate = Decimal('7.00')
+    vat_amount = subtotal * (vat_rate / Decimal('100'))
+    grand_total = subtotal + vat_amount
+
+    invoice.subtotal = subtotal
+    invoice.vat_amount = vat_amount
+    invoice.grand_total = grand_total
+    invoice.save()
+
+    messages.success(request, f"สร้าง Invoice {invoice.invoice_number} จาก {delivery_notes.count()} Delivery Notes สำเร็จ")
+    return redirect("dashboard:invoice_detail", invoice_id=invoice.id)
+
+
+@login_required
 def quotation_list(request):
     """List all quotations"""
     from .models import Quotation
