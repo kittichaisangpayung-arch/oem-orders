@@ -5,40 +5,14 @@
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
         <h2>รายการ Invoice</h2>
         <div style="display: flex; gap: 10px;">
-            <div style="position: relative;">
-                <button onclick="toggleDropdown()" style="background: #28a745; color: #fff; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;">
-                    + สร้าง Invoice ▼
-                </button>
-                <div id="createDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: #fff; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 280px;">
-                    <a href="{% url 'dashboard:create_invoice_from_selected_dns' %}" style="display: block; padding: 12px 16px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
-                        <strong>เลือก Delivery Notes</strong><br>
-                        <span style="font-size: 12px; color: #6c757d;">เลือก DN ที่ต้องการมารวมกัน (แสดงรายการละเอียด)</span>
-                    </a>
-                    <a href="{% url 'dashboard:create_manual_invoice' %}" style="display: block; padding: 12px 16px; color: #333; text-decoration: none;">
-                        <strong>Manual - พิมพ์เอง</strong><br>
-                        <span style="font-size: 12px; color: #6c757d;">สร้าง Invoice โดยพิมพ์รายการเอง</span>
-                    </a>
-                </div>
-            </div>
+            <a href="{% url 'dashboard:create_invoice_from_selected_dns' %}" style="background: #28a745; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-size: 14px;">
+                + เลือก Delivery Notes
+            </a>
+            <a href="{% url 'dashboard:create_manual_invoice' %}" style="background: #17a2b8; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none; font-size: 14px;">
+                + Manual
+            </a>
         </div>
     </div>
-
-    <script>
-    function toggleDropdown(event) {
-        event.stopPropagation();
-        const dropdown = document.getElementById('createDropdown');
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-
-    // Close dropdown when clicking outside
-    document.addEventListener('click', function(e) {
-        const dropdown = document.getElementById('createDropdown');
-        const button = e.target.closest('button[onclick*="toggleDropdown"]');
-        if (!button && dropdown.style.display === 'block') {
-            dropdown.style.display = 'none';
-        }
-    });
-    </script>
 
     <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
