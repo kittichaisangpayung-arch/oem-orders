@@ -155,6 +155,9 @@ class Invoice(models.Model):
     billing_address = models.TextField()
     customer_tax_id = models.CharField(max_length=50, blank=True)
 
+    # PO numbers (comma-separated if multiple)
+    po_numbers = models.CharField(max_length=500, blank=True)
+
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     invoice_type = models.CharField(max_length=20, choices=InvoiceType.choices, default=InvoiceType.BILLING_STATEMENT)
 
