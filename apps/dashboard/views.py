@@ -1914,6 +1914,7 @@ def create_manual_invoice(request):
     customer_id = request.POST.get("customer_id")
     year = int(request.POST.get("invoice_year"))
     month = int(request.POST.get("invoice_month"))
+    po_numbers = request.POST.get("po_numbers", "").strip()
 
     customer = get_object_or_404(Customer, pk=customer_id)
 
@@ -1943,6 +1944,7 @@ def create_manual_invoice(request):
         invoice_year=year,
         billing_address=customer.head_office_address or "",
         customer_tax_id=customer.tax_id or "",
+        po_numbers=po_numbers,
         subtotal=Decimal('0'),
         vat_amount=Decimal('0'),
         grand_total=Decimal('0'),
@@ -2052,6 +2054,13 @@ def create_invoice_from_selected_dns(request):
         messages.error(request, "ไม่พบ Delivery Notes ที่เลือก")
         return redirect("dashboard:create_invoice_from_selected_dns")
 
+    # Collect all PO numbers from selected DNs
+    po_numbers_list = []
+    for dn in delivery_notes:
+        if dn.po_numbers:
+            po_numbers_list.append(dn.po_numbers)
+    po_numbers_combined = ", ".join(set(po_numbers_list))  # Remove duplicates
+
     # Create invoice
     invoice = Invoice.objects.create(
         customer=customer,
@@ -2059,6 +2068,7 @@ def create_invoice_from_selected_dns(request):
         invoice_year=year,
         billing_address=customer.head_office_address or "",
         customer_tax_id=customer.tax_id or "",
+        po_numbers=po_numbers_combined,
         subtotal=Decimal('0'),
         vat_amount=Decimal('0'),
         grand_total=Decimal('0'),
@@ -2083,7 +2093,7 @@ def create_invoice_from_selected_dns(request):
             InvoiceLineItem.objects.create(
                 invoice=invoice,
                 delivery_note=dn,
-                description=f"{dn_item.product.description} (DN: {dn.dn_number})",
+                description=dn_item.product.description,
                 quantity=dn_item.quantity,
                 unit="PCS",
                 amount=item_amount,
