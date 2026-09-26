@@ -1727,6 +1727,7 @@ def create_invoice(request):
         vat_amount=Decimal('0'),
         grand_total=Decimal('0'),
         created_by=request.user,
+        invoice_type=Invoice.InvoiceType.BILLING_STATEMENT,
     )
 
     # Create line items from delivery notes
