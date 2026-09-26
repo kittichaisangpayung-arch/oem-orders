@@ -138,6 +138,10 @@ class Invoice(models.Model):
         PAID = "PAID", "Paid"
         CANCELLED = "CANCELLED", "Cancelled"
 
+    class InvoiceType(models.TextChoices):
+        BILLING_STATEMENT = "BILLING_STATEMENT", "ใบวางบิล"  # Summary by DN
+        DETAILED_INVOICE = "DETAILED_INVOICE", "Invoice"  # Detailed line items
+
     # INV-YYYYMM-NNNNNN format
     invoice_number = models.CharField(max_length=50, unique=True, editable=False)
 
@@ -152,6 +156,7 @@ class Invoice(models.Model):
     customer_tax_id = models.CharField(max_length=50, blank=True)
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    invoice_type = models.CharField(max_length=20, choices=InvoiceType.choices, default=InvoiceType.BILLING_STATEMENT)
 
     # Financial information
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)

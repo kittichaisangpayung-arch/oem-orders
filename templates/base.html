@@ -147,7 +147,8 @@
     <a href="{% url 'dashboard:compensation_analytics' %}">รายงานชดเชย</a>
     <a href="{% url 'dashboard:quotation_list' %}">ใบเสนอราคา</a>
     <a href="{% url 'dashboard:delivery_note_list' %}">Delivery Notes</a>
-    <a href="{% url 'dashboard:invoice_list' %}">Invoices</a>
+    <a href="{% url 'dashboard:billing_statement_list' %}">ใบวางบิล</a>
+    <a href="{% url 'dashboard:invoice_list' %}">Invoice</a>
     {% if user.is_authenticated %}
         <a href="{% url 'ingestion:upload' %}">อัปโหลด PO</a>
     {% endif %}

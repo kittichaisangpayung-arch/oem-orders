@@ -25,6 +25,12 @@ urlpatterns = [
     path("delivery-notes/<int:dn_id>/confirm/", views.confirm_delivery_note, name="confirm_delivery_note"),
     path("delivery-notes/<int:dn_id>/mark-delivered/", views.mark_delivered, name="mark_delivered"),
     path("delivery-notes/<int:dn_id>/delete/", views.delete_delivery_note, name="delete_delivery_note"),
+
+    # Billing Statements (summary type)
+    path("billing-statements/", views.billing_statement_list, name="billing_statement_list"),
+    path("billing-statements/create/", views.create_invoice, name="create_billing_statement"),
+
+    # Invoices (detailed type)
     path("invoices/", views.invoice_list, name="invoice_list"),
     path("invoices/create/", views.create_invoice, name="create_invoice"),
     path("invoices/create-manual/", views.create_manual_invoice, name="create_manual_invoice"),

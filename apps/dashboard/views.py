@@ -1548,10 +1548,13 @@ def delete_delivery_note(request, dn_id):
 
 @login_required
 def invoice_list(request):
-    """List all invoices"""
+    """List all invoices (detailed type only)"""
     from .models import Invoice
 
-    invoices = Invoice.objects.select_related("customer", "created_by").order_by("-created_at")
+    # Filter only detailed invoices
+    invoices = Invoice.objects.filter(
+        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE
+    ).select_related("customer", "created_by").order_by("-created_at")
 
     # Apply filters
     search = request.GET.get('search', '')
@@ -1591,6 +1594,56 @@ def invoice_list(request):
         "year_filter": year,
     }
     return render(request, "dashboard/invoice_list.html", context)
+
+
+@login_required
+def billing_statement_list(request):
+    """List all billing statements (summary type)"""
+    from .models import Invoice
+
+    # Filter only billing statement type invoices
+    invoices = Invoice.objects.filter(
+        invoice_type=Invoice.InvoiceType.BILLING_STATEMENT
+    ).select_related("customer", "created_by").order_by("-created_at")
+
+    # Apply filters
+    search = request.GET.get('search', '')
+    status = request.GET.get('status', '')
+    customer_id = request.GET.get('customer', '')
+    month = request.GET.get('month', '')
+    year = request.GET.get('year', '')
+
+    if search:
+        invoices = invoices.filter(
+            Q(invoice_number__icontains=search) |
+            Q(customer__name__icontains=search)
+        )
+
+    if status:
+        invoices = invoices.filter(status=status)
+
+    if customer_id:
+        invoices = invoices.filter(customer_id=customer_id)
+
+    if month:
+        invoices = invoices.filter(invoice_month=int(month))
+
+    if year:
+        invoices = invoices.filter(invoice_year=int(year))
+
+    # Get all customers for filter dropdown
+    customers = Customer.objects.filter(is_active=True).order_by('name')
+
+    context = {
+        "invoices": invoices,
+        "customers": customers,
+        "search": search,
+        "status_filter": status,
+        "customer_filter": customer_id,
+        "month_filter": month,
+        "year_filter": year,
+    }
+    return render(request, "dashboard/billing_statement_list.html", context)
 
 
 @login_required
@@ -1893,6 +1946,7 @@ def create_manual_invoice(request):
         vat_amount=Decimal('0'),
         grand_total=Decimal('0'),
         created_by=request.user,
+        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE,
     )
 
     # Create line items
@@ -2010,39 +2064,35 @@ def create_invoice_from_selected_dns(request):
         vat_amount=Decimal('0'),
         grand_total=Decimal('0'),
         created_by=request.user,
+        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE,
     )
 
     # Create line items from selected delivery notes
+    # Each product in DN becomes a separate line item
     subtotal = Decimal('0')
     line_no = 1
 
     for dn in delivery_notes:
-        # Get product groups from DN items
-        items = dn.items.all()
-        product_groups = set()
-        total_qty = 0
+        # Get all items from this delivery note
+        dn_items = dn.items.select_related('product').all()
 
-        for item in items:
-            if item.product.product_group:
-                product_groups.add(item.product.product_group)
-            total_qty += item.quantity
+        for dn_item in dn_items:
+            # Calculate amount for this item (price * quantity)
+            item_amount = dn_item.price * dn_item.quantity
 
-        # Create description from product groups
-        description = " & ".join(sorted(product_groups)) if product_groups else "สินค้าทั่วไป"
+            # Create invoice line item for each product
+            InvoiceLineItem.objects.create(
+                invoice=invoice,
+                delivery_note=dn,
+                description=f"{dn_item.product.name} (DN: {dn.dn_number})",
+                quantity=dn_item.quantity,
+                unit="PCS",
+                amount=item_amount,
+                line_no=line_no,
+            )
 
-        # Create invoice line item
-        InvoiceLineItem.objects.create(
-            invoice=invoice,
-            delivery_note=dn,
-            description=description,
-            quantity=total_qty,
-            unit="PCS",
-            amount=dn.grand_total,
-            line_no=line_no,
-        )
-
-        subtotal += dn.subtotal
-        line_no += 1
+            subtotal += item_amount
+            line_no += 1
 
     # Calculate totals
     vat_rate = Decimal('7.00')

@@ -1,43 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Invoice List{% endblock %}
+{% block title %}รายการใบวางบิล{% endblock %}
 {% block content %}
 <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h2>รายการ Invoice</h2>
-        <div style="display: flex; gap: 10px;">
-            <div style="position: relative;">
-                <button onclick="toggleDropdown()" style="background: #28a745; color: #fff; padding: 10px 20px; border-radius: 4px; border: none; cursor: pointer; font-size: 14px;">
-                    + สร้าง Invoice ▼
-                </button>
-                <div id="createDropdown" style="display: none; position: absolute; right: 0; top: 100%; margin-top: 5px; background: #fff; border: 1px solid #ddd; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); z-index: 1000; min-width: 280px;">
-                    <a href="{% url 'dashboard:create_invoice_from_selected_dns' %}" style="display: block; padding: 12px 16px; color: #333; text-decoration: none; border-bottom: 1px solid #eee;">
-                        <strong>เลือก Delivery Notes</strong><br>
-                        <span style="font-size: 12px; color: #6c757d;">เลือก DN ที่ต้องการมารวมกัน (แสดงรายการละเอียด)</span>
-                    </a>
-                    <a href="{% url 'dashboard:create_manual_invoice' %}" style="display: block; padding: 12px 16px; color: #333; text-decoration: none;">
-                        <strong>Manual - พิมพ์เอง</strong><br>
-                        <span style="font-size: 12px; color: #6c757d;">สร้าง Invoice โดยพิมพ์รายการเอง</span>
-                    </a>
-                </div>
-            </div>
-        </div>
+        <h2>รายการใบวางบิล</h2>
+        <a href="{% url 'dashboard:create_billing_statement' %}" style="background: #28a745; color: #fff; padding: 10px 20px; border-radius: 4px; text-decoration: none;">+ สร้างใบวางบิล</a>
     </div>
-
-    <script>
-    function toggleDropdown() {
-        const dropdown = document.getElementById('createDropdown');
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
-    }
-
-    // Close dropdown when clicking outside
-    window.addEventListener('click', function(e) {
-        const dropdown = document.getElementById('createDropdown');
-        const button = e.target.closest('button');
-        if (!button || button.onclick !== toggleDropdown) {
-            dropdown.style.display = 'none';
-        }
-    });
-    </script>
 
     <form method="get" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
         <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: end;">
@@ -83,7 +51,7 @@
             </div>
             <div style="display: flex; gap: 5px;">
                 <button type="submit" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">ค้นหา</button>
-                <a href="{% url 'dashboard:invoice_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
+                <a href="{% url 'dashboard:billing_statement_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
             </div>
         </div>
     </form>
@@ -130,17 +98,17 @@
             {% empty %}
             <tr>
                 <td colspan="7" style="padding: 40px; text-align: center; color: #6c757d;">
-                    ไม่มี Invoice<br>
-                    <a href="{% url 'dashboard:create_invoice' %}" style="color: #007bff; margin-top: 10px; display: inline-block;">สร้าง Invoice ใหม่</a>
+                    ไม่มีใบวางบิล<br>
+                    <a href="{% url 'dashboard:create_billing_statement' %}" style="color: #007bff; margin-top: 10px; display: inline-block;">สร้างใบวางบิลใหม่</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <div style="margin-top: 20px; padding: 15px; background: #d4edda; border-left: 4px solid #28a745; border-radius: 4px;">
+    <div style="margin-top: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
         <h4 style="margin-top: 0;">หมายเหตุ:</h4>
-        <p style="margin: 0;"><strong>Invoice</strong> = แสดงรายการสินค้าละเอียดแต่ละรายการจาก Delivery Notes หรือพิมพ์เอง</p>
+        <p style="margin: 0;">ใบวางบิล = รวม Delivery Notes ทั้งหมดของลูกค้าในเดือนที่เลือก (แสดงแบบสรุป)</p>
     </div>
 </div>
 {% endblock %}
