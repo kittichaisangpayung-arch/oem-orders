@@ -2083,7 +2083,7 @@ def create_invoice_from_selected_dns(request):
             InvoiceLineItem.objects.create(
                 invoice=invoice,
                 delivery_note=dn,
-                description=f"{dn_item.product.name} (DN: {dn.dn_number})",
+                description=f"{dn_item.product.description} (DN: {dn.dn_number})",
                 quantity=dn_item.quantity,
                 unit="PCS",
                 amount=item_amount,
