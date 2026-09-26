@@ -24,16 +24,17 @@
     </div>
 
     <script>
-    function toggleDropdown() {
+    function toggleDropdown(event) {
+        event.stopPropagation();
         const dropdown = document.getElementById('createDropdown');
         dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
     }
 
     // Close dropdown when clicking outside
-    window.addEventListener('click', function(e) {
+    document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('createDropdown');
-        const button = e.target.closest('button');
-        if (!button || button.onclick !== toggleDropdown) {
+        const button = e.target.closest('button[onclick*="toggleDropdown"]');
+        if (!button && dropdown.style.display === 'block') {
             dropdown.style.display = 'none';
         }
     });
