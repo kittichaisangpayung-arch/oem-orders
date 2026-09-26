@@ -2,7 +2,10 @@
 {% block title %}สร้าง Invoice จาก Delivery Notes ที่เลือก{% endblock %}
 {% block content %}
 <div style="max-width: 1400px; margin: 0 auto; padding: 20px;">
-    <h2 style="margin-bottom: 20px;">สร้าง Invoice จาก Delivery Notes ที่เลือก</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;">สร้าง Invoice จาก Delivery Notes ที่เลือก</h2>
+        <a href="{% url 'dashboard:invoice_list' %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none;">← กลับหน้า Invoice</a>
+    </div>
 
     <form method="post" id="invoiceForm" style="background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         {% csrf_token %}
