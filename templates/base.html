@@ -54,6 +54,54 @@
             transform: translateY(-1px);
         }
 
+        /* Dropdown menu styles */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background: white;
+            min-width: 200px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            border-radius: 8px;
+            z-index: 1000;
+            margin-top: 5px;
+        }
+
+        .dropdown-content a {
+            color: var(--text-dark);
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background 0.2s ease;
+            border-radius: 0;
+        }
+
+        .dropdown-content a:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .dropdown-content a:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        .dropdown-content a:hover {
+            background: var(--pink-light);
+            transform: none;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown > a::after {
+            content: " ▾";
+            font-size: 12px;
+        }
+
         nav .spacer { flex: 1; }
 
         nav span {
@@ -145,10 +193,18 @@
     <a href="{% url 'dashboard:product_inactivity_report' %}">สินค้าไม่ได้สั่ง</a>
     <a href="{% url 'dashboard:claim_analytics' %}">รายงานเคลม</a>
     <a href="{% url 'dashboard:compensation_analytics' %}">รายงานชดเชย</a>
-    <a href="{% url 'dashboard:quotation_list' %}">ใบเสนอราคา</a>
-    <a href="{% url 'dashboard:delivery_note_list' %}">Delivery Notes</a>
-    <a href="{% url 'dashboard:billing_statement_list' %}">ใบวางบิล</a>
-    <a href="{% url 'dashboard:invoice_list' %}">Invoice</a>
+
+    <!-- Dropdown menu for documents -->
+    <div class="dropdown">
+        <a href="#">📄 ออกเอกสาร</a>
+        <div class="dropdown-content">
+            <a href="{% url 'dashboard:quotation_list' %}">ใบเสนอราคา</a>
+            <a href="{% url 'dashboard:delivery_note_list' %}">Delivery Notes</a>
+            <a href="{% url 'dashboard:billing_statement_list' %}">ใบวางบิล</a>
+            <a href="{% url 'dashboard:invoice_list' %}">Invoice</a>
+        </div>
+    </div>
+
     {% if user.is_authenticated %}
         <a href="{% url 'ingestion:upload' %}">อัปโหลด PO</a>
     {% endif %}
