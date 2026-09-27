@@ -39,6 +39,7 @@ urlpatterns = [
     path("invoices/<int:invoice_id>/receipt/", views.invoice_receipt, name="invoice_receipt"),
     path("invoices/<int:invoice_id>/edit/", views.edit_invoice, name="edit_invoice"),
     path("invoices/<int:invoice_id>/delete/", views.delete_invoice, name="delete_invoice"),
+    path("invoices/<int:invoice_id>/update-status/", views.update_invoice_status, name="update_invoice_status"),
 
     # Quotations
     path("quotations/", views.quotation_list, name="quotation_list"),

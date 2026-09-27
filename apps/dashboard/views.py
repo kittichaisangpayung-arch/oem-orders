@@ -1886,6 +1886,69 @@ def delete_invoice(request, invoice_id):
 
 
 @login_required
+def update_invoice_status(request, invoice_id):
+    """Update invoice status with professional workflow"""
+    from .models import Invoice
+    from django.contrib import messages
+    from django.utils import timezone
+
+    if request.method != "POST":
+        return redirect("dashboard:invoice_detail", invoice_id=invoice_id)
+
+    invoice = get_object_or_404(Invoice, pk=invoice_id)
+    new_status = request.POST.get("status")
+
+    # Status validation and workflow rules
+    allowed_transitions = {
+        Invoice.Status.DRAFT: [Invoice.Status.SENT, Invoice.Status.CANCELLED],
+        Invoice.Status.SENT: [Invoice.Status.WAITING_PAYMENT, Invoice.Status.CANCELLED],
+        Invoice.Status.WAITING_PAYMENT: [Invoice.Status.PAID, Invoice.Status.CANCELLED],
+        Invoice.Status.PAID: [],  # Cannot change from paid
+        Invoice.Status.CANCELLED: [],  # Cannot change from cancelled
+    }
+
+    if new_status not in [s[0] for s in Invoice.Status.choices]:
+        messages.error(request, "สถานะไม่ถูกต้อง")
+        return redirect("dashboard:invoice_detail", invoice_id=invoice_id)
+
+    # Check if transition is allowed
+    if invoice.status not in allowed_transitions:
+        messages.error(request, f"ไม่สามารถเปลี่ยนสถานะจาก {invoice.get_status_display()} ได้")
+        return redirect("dashboard:invoice_detail", invoice_id=invoice_id)
+
+    if new_status not in allowed_transitions[invoice.status]:
+        messages.error(request, f"ไม่สามารถเปลี่ยนจาก {invoice.get_status_display()} เป็น {dict(Invoice.Status.choices)[new_status]} ได้")
+        return redirect("dashboard:invoice_detail", invoice_id=invoice_id)
+
+    # Update status and track timestamps
+    old_status = invoice.status
+    invoice.status = new_status
+
+    if new_status == Invoice.Status.SENT:
+        invoice.sent_at = timezone.now()
+        messages.success(request, f"เปลี่ยนสถานะเป็น 'ส่งเอกสารแล้ว' เรียบร้อย")
+
+    elif new_status == Invoice.Status.WAITING_PAYMENT:
+        if not invoice.sent_at:
+            invoice.sent_at = timezone.now()
+        messages.success(request, f"เปลี่ยนสถานะเป็น 'รอเงิน' เรียบร้อย")
+
+    elif new_status == Invoice.Status.PAID:
+        invoice.paid_at = timezone.now()
+        messages.success(request, f"บันทึกการชำระเงินเรียบร้อย")
+
+    elif new_status == Invoice.Status.CANCELLED:
+        invoice.cancelled_at = timezone.now()
+        cancellation_reason = request.POST.get("cancellation_reason", "")
+        invoice.cancellation_reason = cancellation_reason
+        messages.warning(request, f"ยกเลิก Invoice เรียบร้อย")
+
+    invoice.save()
+
+    return redirect("dashboard:invoice_detail", invoice_id=invoice_id)
+
+
+@login_required
 def invoice_receipt(request, invoice_id):
     """View receipt version of invoice"""
     from .models import Invoice

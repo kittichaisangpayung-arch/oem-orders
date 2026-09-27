@@ -133,10 +133,11 @@ class Invoice(models.Model):
     """Invoice for billing customer, combining multiple delivery notes."""
 
     class Status(models.TextChoices):
-        DRAFT = "DRAFT", "Draft"
-        ISSUED = "ISSUED", "Issued"
-        PAID = "PAID", "Paid"
-        CANCELLED = "CANCELLED", "Cancelled"
+        DRAFT = "DRAFT", "แบบร่าง"
+        SENT = "SENT", "ส่งเอกสารแล้ว"
+        WAITING_PAYMENT = "WAITING_PAYMENT", "รอเงิน"
+        PAID = "PAID", "จ่ายแล้ว"
+        CANCELLED = "CANCELLED", "ยกเลิก"
 
     class InvoiceType(models.TextChoices):
         BILLING_STATEMENT = "BILLING_STATEMENT", "ใบวางบิล"  # Summary by DN
@@ -170,6 +171,12 @@ class Invoice(models.Model):
     # Payment terms
     payment_terms = models.CharField(max_length=200, default="ระยะเวลา 30 วัน")
     due_date = models.DateField(null=True, blank=True)
+
+    # Status tracking
+    sent_at = models.DateTimeField(null=True, blank=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancellation_reason = models.TextField(blank=True)
 
     notes = models.TextField(blank=True)
 
