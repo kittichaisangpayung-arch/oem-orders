@@ -5,154 +5,210 @@
 
 {% block extra_css %}
 <style>
+    .compensation-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .page-header {
+        background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+        padding: 30px;
+        border-radius: 16px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(184, 132, 219, 0.15);
+    }
+    .page-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 32px;
+        color: var(--pink-dark);
+    }
+    .page-header p {
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 16px;
+    }
     .stat-card {
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        background: #fff;
+        border: 2px solid var(--cream-dark);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 12px rgba(184, 132, 219, 0.15);
+        transition: all 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(184, 132, 219, 0.25);
+        border-color: var(--mint);
     }
     .stat-card h3 {
-        color: #94A3B8;
-        font-size: 0.875rem;
-        font-weight: 500;
-        margin: 0 0 0.5rem 0;
+        color: var(--text-muted);
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 12px 0;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     .stat-card .value {
-        color: #F8FAFC;
-        font-size: 2rem;
+        color: var(--pink-dark);
+        font-size: 36px;
         font-weight: 700;
         margin: 0;
-    }
-    .stat-card .subvalue {
-        color: #64748B;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
+        font-family: "Baloo 2", "Noto Sans Thai", sans-serif;
     }
     .product-card {
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        background: #fff;
+        border: 2px solid transparent;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
         display: flex;
-        gap: 1rem;
+        gap: 16px;
         align-items: center;
-        transition: all 0.2s;
+        transition: all 0.3s;
+        box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
     }
     .product-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        border-color: #38BDF8;
+        box-shadow: 0 8px 20px rgba(184, 132, 219, 0.2);
+        border-color: var(--mint);
     }
     .product-card img {
-        width: 60px;
-        height: 60px;
+        width: 80px;
+        height: 80px;
         object-fit: cover;
-        border-radius: 4px;
-        background: #0F172A;
+        border-radius: 12px;
+        background: var(--cream);
+        border: 3px solid var(--cream-dark);
     }
     .product-card .info {
         flex: 1;
     }
     .product-card .barcode {
-        color: #64748B;
-        font-size: 0.75rem;
-        font-family: 'Courier New', monospace;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-family: monospace;
+        background: var(--cream);
+        padding: 4px 8px;
+        border-radius: 6px;
+        display: inline-block;
     }
     .product-card .description {
-        color: #F8FAFC;
-        font-weight: 500;
-        margin: 0.25rem 0;
+        color: var(--text-dark);
+        font-weight: 600;
+        margin: 8px 0;
+        font-size: 15px;
     }
     .product-card .stats {
-        color: #38BDF8;
-        font-size: 0.875rem;
+        display: flex;
+        gap: 10px;
+        align-items: center;
     }
     .chart-container {
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        height: 300px;
+        background: #fff;
+        border: 2px solid var(--cream-dark);
+        border-radius: 16px;
+        padding: 24px;
+        margin-bottom: 24px;
+        height: 350px;
+        box-shadow: 0 4px 12px rgba(184, 132, 219, 0.15);
     }
     .filter-section {
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
+        background: #fff;
+        border: 2px solid var(--cream-dark);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
     }
     .filter-section label {
-        color: #94A3B8;
-        font-size: 0.875rem;
-        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 6px;
         display: block;
     }
     .filter-section input, .filter-section select {
-        background: #0F172A;
-        border: 1px solid #334155;
-        color: #F8FAFC;
-        padding: 0.5rem;
-        border-radius: 4px;
+        background: #fff;
+        border: 2px solid var(--cream-dark);
+        color: var(--text-dark);
+        padding: 10px;
+        border-radius: 8px;
         width: 100%;
+        font-family: inherit;
+        transition: border-color 0.2s;
+    }
+    .filter-section input:focus, .filter-section select:focus {
+        outline: none;
+        border-color: var(--pink);
     }
     .filter-section button {
-        background: #38BDF8;
-        color: #0B0E14;
+        background: linear-gradient(135deg, var(--pink), var(--purple));
+        color: #fff;
         border: none;
-        padding: 0.5rem 1.5rem;
-        border-radius: 4px;
+        padding: 10px 24px;
+        border-radius: 20px;
         font-weight: 600;
         cursor: pointer;
         margin-top: 1rem;
+        transition: all 0.2s;
     }
     .filter-section button:hover {
-        background: #22D3EE;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(232, 93, 140, 0.3);
+    }
+    .section-title {
+        color: var(--pink-dark);
+        font-size: 20px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        font-family: "Baloo 2", "Noto Sans Thai", sans-serif;
     }
     table {
         width: 100%;
-        background: #1E293B;
-        border: 1px solid #334155;
-        border-radius: 8px;
+        background: #fff;
+        border: 2px solid var(--cream-dark);
+        border-radius: 12px;
         overflow: hidden;
+        box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
     }
     th {
-        background: #0F172A;
-        color: #94A3B8;
-        padding: 0.75rem;
+        background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+        color: var(--pink-dark);
+        padding: 12px;
         text-align: left;
-        font-size: 0.875rem;
-        font-weight: 600;
+        font-size: 13px;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
     td {
-        padding: 0.75rem;
-        color: #F8FAFC;
-        border-top: 1px solid #334155;
+        padding: 12px;
+        color: var(--text-dark);
+        border-top: 1px solid var(--cream-dark);
+    }
+    tbody tr:hover {
+        background: var(--cream);
     }
     .badge {
         display: inline-block;
-        padding: 0.25rem 0.75rem;
-        border-radius: 4px;
-        font-size: 0.75rem;
+        padding: 6px 12px;
+        border-radius: 12px;
+        font-size: 13px;
         font-weight: 600;
     }
     .badge-success {
-        background: #22C55E20;
-        color: #22C55E;
+        background: var(--mint);
+        color: #fff;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid" style="padding: 2rem;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 style="color: #F8FAFC; margin: 0;">📊 รายงานชดเชยสินค้า</h1>
+<div class="compensation-container">
+    <!-- Header -->
+    <div class="page-header">
+        <h1>💚 รายงานชดเชยสินค้า</h1>
+        <p>ติดตามข้อมูลการชดเชยสินค้าและแนวโน้มการชดเชย</p>
     </div>
 
     <!-- Filters -->
@@ -225,7 +281,7 @@
     <div class="row">
         <!-- Top 10 Compensated Products -->
         <div class="col-md-6">
-            <h3 style="color: #F8FAFC; margin-bottom: 1rem;">🔥 Top 10 สินค้าที่ชดเชยมากที่สุด</h3>
+            <h3 class="section-title">🔥 Top 10 สินค้าที่ชดเชยมากที่สุด</h3>
             {% for item in top_products %}
             <div class="product-card">
                 {% if item.product__image %}
@@ -243,13 +299,13 @@
                 </div>
             </div>
             {% empty %}
-            <p style="color: #64748B;">ไม่มีข้อมูลชดเชย</p>
+            <p style="color: var(--text-muted); text-align: center; padding: 40px;">ไม่มีข้อมูลชดเชย</p>
             {% endfor %}
         </div>
 
         <!-- Recent Compensations -->
         <div class="col-md-6">
-            <h3 style="color: #F8FAFC; margin-bottom: 1rem;">🕒 ชดเชยล่าสุด</h3>
+            <h3 class="section-title">🕒 ชดเชยล่าสุด</h3>
             <table>
                 <thead>
                     <tr>
@@ -269,7 +325,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" style="text-align: center; color: #64748B;">ไม่มีข้อมูลชดเชย</td>
+                        <td colspan="4" style="text-align: center; color: var(--text-muted);">ไม่มีข้อมูลชดเชย</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -299,16 +355,16 @@ new Chart(ctx, {
         datasets: [{
             label: 'จำนวนชิ้น',
             data: qtyData,
-            borderColor: '#22C55E',
-            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+            borderColor: '#8FD9C4',
+            backgroundColor: 'rgba(143, 217, 196, 0.2)',
             tension: 0.3,
             fill: true,
             yAxisID: 'y'
         }, {
             label: 'จำนวนครั้ง',
             data: countData,
-            borderColor: '#38BDF8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            borderColor: '#B185DB',
+            backgroundColor: 'rgba(177, 133, 219, 0.2)',
             tension: 0.3,
             fill: true,
             yAxisID: 'y1'
@@ -320,25 +376,46 @@ new Chart(ctx, {
         plugins: {
             legend: {
                 labels: {
-                    color: '#F8FAFC'
+                    color: '#5C4033',
+                    font: {
+                        family: "'Noto Sans Thai', Arial, sans-serif",
+                        weight: '600'
+                    }
                 }
             }
         },
         scales: {
             x: {
-                ticks: { color: '#94A3B8' },
-                grid: { color: '#334155' }
+                ticks: {
+                    color: '#9C8577',
+                    font: {
+                        family: "'Noto Sans Thai', Arial, sans-serif"
+                    }
+                },
+                grid: { color: '#FDEEDC' }
             },
             y: {
                 type: 'linear',
                 position: 'left',
-                ticks: { color: '#22C55E' },
-                grid: { color: '#334155' }
+                ticks: {
+                    color: '#8FD9C4',
+                    font: {
+                        family: "'Noto Sans Thai', Arial, sans-serif",
+                        weight: '600'
+                    }
+                },
+                grid: { color: '#FDEEDC' }
             },
             y1: {
                 type: 'linear',
                 position: 'right',
-                ticks: { color: '#38BDF8' },
+                ticks: {
+                    color: '#B185DB',
+                    font: {
+                        family: "'Noto Sans Thai', Arial, sans-serif",
+                        weight: '600'
+                    }
+                },
                 grid: { display: false }
             }
         }
