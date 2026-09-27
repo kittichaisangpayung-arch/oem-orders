@@ -1798,7 +1798,14 @@ def invoice_detail(request, invoice_id):
         "company": company,
         "total_quantity": total_quantity,
     }
-    return render(request, "dashboard/invoice_detail.html", context)
+
+    # Select template based on invoice type
+    if invoice.invoice_type == Invoice.InvoiceType.BILLING_STATEMENT:
+        template = "dashboard/billing_statement_detail.html"
+    else:
+        template = "dashboard/invoice_detail.html"
+
+    return render(request, template, context)
 
 
 @login_required

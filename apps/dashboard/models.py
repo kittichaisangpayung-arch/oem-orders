@@ -191,11 +191,16 @@ class Invoice(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.invoice_number:
-            # Generate invoice number: INV-YYYYMM-NNNNNN
+            # Generate invoice number with different prefix based on type
             year_month = f"{self.invoice_year}{self.invoice_month:02d}"
-            prefix = f"INV-{year_month}-"
 
-            # Find the last invoice number for this month
+            # Use different prefix for billing statement vs detailed invoice
+            if self.invoice_type == self.InvoiceType.BILLING_STATEMENT:
+                prefix = f"BS-{year_month}-"  # BS = Billing Statement
+            else:
+                prefix = f"INV-{year_month}-"  # INV = Invoice
+
+            # Find the last invoice number for this month and type
             last_invoice = Invoice.objects.filter(
                 invoice_number__startswith=prefix
             ).order_by("-invoice_number").first()

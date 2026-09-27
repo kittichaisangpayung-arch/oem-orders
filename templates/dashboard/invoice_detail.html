@@ -327,8 +327,11 @@
     .invoice-page {
         padding: 10mm 15mm;
         box-shadow: none;
-        page-break-after: always;
         margin-bottom: 0;
+    }
+
+    .invoice-page:not(:last-child) {
+        page-break-after: always;
     }
 
     nav {
