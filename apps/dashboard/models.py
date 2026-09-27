@@ -179,12 +179,6 @@ class Invoice(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-        constraints = [
-            models.UniqueConstraint(
-                fields=["customer", "invoice_year", "invoice_month", "invoice_type"],
-                name="unique_invoice_per_customer_month_type"
-            ),
-        ]
 
     def __str__(self):
         return f"{self.invoice_number} - {self.customer.name} ({self.invoice_year}-{self.invoice_month:02d})"
