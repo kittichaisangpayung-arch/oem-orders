@@ -1541,7 +1541,17 @@ def delete_delivery_note(request, dn_id):
         return redirect("dashboard:delivery_note_list")
 
     dn = get_object_or_404(DeliveryNote, pk=dn_id)
+
+    # Check if this DN is used in any invoices
+    if dn.invoice_items.exists():
+        from django.contrib import messages
+        invoices = [item.invoice.invoice_number for item in dn.invoice_items.all()]
+        messages.error(request, f"ไม่สามารถลบ Delivery Note นี้ได้ เนื่องจากถูกใช้ใน Invoice: {', '.join(invoices)}")
+        return redirect("dashboard:delivery_note_detail", dn_id=dn_id)
+
     dn.delete()
+    from django.contrib import messages
+    messages.success(request, f"ลบ Delivery Note {dn.dn_number} เรียบร้อยแล้ว")
 
     return redirect("dashboard:delivery_note_list")
 
