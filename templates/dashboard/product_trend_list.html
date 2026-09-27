@@ -5,154 +5,270 @@
 
 {% block content %}
 <style>
+.trend-container {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+.page-header {
+    background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+    padding: 30px;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 12px rgba(184, 132, 219, 0.15);
+}
+.page-header h2 {
+    margin: 0 0 10px 0;
+    font-size: 32px;
+    color: var(--pink-dark);
+}
+.page-header p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 16px;
+}
+.filter-card {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+.filter-info {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+.stat-badge {
+    background: var(--pink-light);
+    color: var(--pink-dark);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+}
+.period-buttons {
+    display: flex;
+    gap: 8px;
+}
+.period-btn {
+    padding: 8px 20px;
+    border: 2px solid var(--pink);
+    background: #fff;
+    color: var(--pink-dark);
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+.period-btn:hover {
+    background: var(--pink-light);
+    transform: translateY(-1px);
+}
+.period-btn.active {
+    background: var(--pink);
+    color: #fff;
+}
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+}
 .product-card {
     background: #fff;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 20px;
-    transition: all 0.2s;
-    height: 100%;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+    border: 2px solid transparent;
 }
 .product-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(184, 132, 219, 0.25);
+    transform: translateY(-4px);
+    border-color: var(--pink);
+}
+.product-image-wrapper {
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 15px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid var(--cream-dark);
 }
 .product-img {
-    width: 80px;
-    height: 80px;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
-    border-radius: 8px;
-    border: 2px solid #f0f0f0;
+}
+.product-placeholder {
+    font-size: 48px;
 }
 .product-name {
-    font-size: 15px;
-    font-weight: 600;
-    color: #2c3e50;
-    margin: 12px 0 4px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin: 0 0 5px 0;
+    text-align: center;
+    min-height: 40px;
     line-height: 1.3;
 }
 .product-barcode {
     font-size: 11px;
-    color: #7f8c8d;
+    color: var(--text-muted);
     font-family: monospace;
+    text-align: center;
+    margin-bottom: 15px;
+    padding: 4px 8px;
+    background: var(--cream);
+    border-radius: 6px;
 }
-.stat-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid #f5f5f5;
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
 }
-.stat-row:last-child {
-    border-bottom: none;
+.stat-item {
+    background: var(--cream);
+    padding: 12px;
+    border-radius: 8px;
+    text-align: center;
 }
 .stat-label {
-    font-size: 13px;
-    color: #7f8c8d;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
 }
 .stat-value {
-    font-size: 15px;
-    font-weight: 600;
-    color: #2c3e50;
-}
-.stat-value.highlight {
-    color: #3498db;
     font-size: 18px;
+    font-weight: 700;
+    color: var(--pink-dark);
 }
-.trend-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
+.stat-value.large {
+    font-size: 24px;
+    color: var(--purple);
 }
-.trend-up { background: #d4edda; color: #155724; }
-.trend-down { background: #f8d7da; color: #721c24; }
-.trend-stable { background: #d1ecf1; color: #0c5460; }
-.filter-bar {
-    background: #f8f9fa;
-    padding: 16px;
+.view-detail-btn {
+    display: block;
+    margin-top: 15px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff;
+    text-align: center;
     border-radius: 8px;
-    margin-bottom: 24px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.view-detail-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(232, 93, 140, 0.3);
+    color: #fff;
+}
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+}
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+.empty-state h3 {
+    color: var(--text-dark);
+    margin-bottom: 10px;
+}
+.empty-state p {
+    color: var(--text-muted);
 }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="trend-container">
+    <!-- Header -->
+    <div class="page-header">
         <h2>📊 แนวโน้มสินค้า</h2>
-        <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-primary">
-            📈 เปรียบเทียบหลายสินค้า
-        </a>
+        <p>ติดตามยอดขายและแนวโน้มของสินค้าแต่ละรายการ</p>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-bar">
-        <div class="d-flex justify-content-between align-items-center">
+    <!-- Filter Card -->
+    <div class="filter-card">
+        <div class="filter-info">
             <div>
-                <small class="text-muted">แสดงข้อมูล: {{ start_date|date:"d/m/Y" }} ถึง {{ end_date|date:"d/m/Y" }}</small>
-                <span class="badge bg-primary ms-2">{{ product_stats|length }} สินค้า</span>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">ช่วงเวลา</div>
+                <div style="font-weight: 600; color: var(--text-dark);">{{ start_date|date:"d/m/Y" }} - {{ end_date|date:"d/m/Y" }}</div>
             </div>
-            <div class="btn-group" role="group">
-                <a href="?months=3" class="btn btn-sm {% if months == 3 %}btn-primary{% else %}btn-outline-primary{% endif %}">3 เดือน</a>
-                <a href="?months=6" class="btn btn-sm {% if months == 6 %}btn-primary{% else %}btn-outline-primary{% endif %}">6 เดือน</a>
-                <a href="?months=12" class="btn btn-sm {% if months == 12 %}btn-primary{% else %}btn-outline-primary{% endif %}">12 เดือน</a>
+            <div class="stat-badge">
+                {{ product_stats|length }} สินค้า
             </div>
+        </div>
+        <div class="period-buttons">
+            <a href="?months=3" class="period-btn {% if months == 3 %}active{% endif %}">3 เดือน</a>
+            <a href="?months=6" class="period-btn {% if months == 6 %}active{% endif %}">6 เดือน</a>
+            <a href="?months=12" class="period-btn {% if months == 12 %}active{% endif %}">12 เดือน</a>
         </div>
     </div>
 
-    <!-- Product Cards Grid -->
-    <div class="row g-3">
+    <!-- Product Grid -->
+    {% if product_stats %}
+    <div class="product-grid">
         {% for stat in product_stats %}
-        <div class="col-md-6 col-lg-4 col-xl-3">
-            <div class="product-card">
-                <div class="text-center">
-                    {% if stat.product.image %}
-                    <img src="{{ stat.product.image.url }}" alt="{{ stat.product.description }}" class="product-img">
-                    {% else %}
-                    <div class="product-img" style="background:#f0f0f0; display:flex; align-items:center; justify-content:center;">
-                        <span style="font-size:32px;">📦</span>
-                    </div>
-                    {% endif %}
+        <div class="product-card">
+            <div class="product-image-wrapper">
+                {% if stat.product.image %}
+                <img src="{{ stat.product.image.url }}" alt="{{ stat.product.description }}" class="product-img">
+                {% else %}
+                <div class="product-placeholder">📦</div>
+                {% endif %}
+            </div>
+
+            <h3 class="product-name">{{ stat.product.description|truncatechars:45 }}</h3>
+            <div class="product-barcode">{{ stat.product.barcode }}</div>
+
+            <div style="text-align: center; margin: 15px 0;">
+                <div class="stat-label">ยอดขายรวม</div>
+                <div class="stat-value large">{{ stat.total_qty|intcomma }}</div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">มูลค่า</div>
+                    <div class="stat-value">฿{{ stat.total_value|floatformat:0|intcomma }}</div>
                 </div>
-
-                <div class="product-name">{{ stat.product.description|truncatechars:40 }}</div>
-                <div class="product-barcode">{{ stat.product.barcode }}</div>
-
-                <div style="margin-top: 16px;">
-                    <div class="stat-row">
-                        <span class="stat-label">ยอดขายรวม</span>
-                        <span class="stat-value highlight">{{ stat.total_qty|intcomma }}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">มูลค่า</span>
-                        <span class="stat-value">฿{{ stat.total_value|floatformat:0|intcomma }}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">ราคาเฉลี่ย</span>
-                        <span class="stat-value">฿{{ stat.avg_price|floatformat:2 }}</span>
-                    </div>
-                    <div class="stat-row">
-                        <span class="stat-label">จำนวนครั้ง</span>
-                        <span class="stat-value">{{ stat.order_count }} ครั้ง</span>
-                    </div>
-                </div>
-
-                <div class="mt-3 text-center">
-                    <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}"
-                       class="btn btn-sm btn-outline-primary w-100">
-                        ดูรายละเอียด →
-                    </a>
+                <div class="stat-item">
+                    <div class="stat-label">ราคาเฉลี่ย</div>
+                    <div class="stat-value">฿{{ stat.avg_price|floatformat:2 }}</div>
                 </div>
             </div>
-        </div>
-        {% empty %}
-        <div class="col-12">
-            <div class="text-center py-5 text-muted">
-                <h4>ไม่พบข้อมูลสินค้า</h4>
-                <p>ไม่มีข้อมูลการสั่งซื้อในช่วงเวลาที่เลือก</p>
+
+            <div style="text-align: center; margin-top: 12px; color: var(--text-muted); font-size: 13px;">
+                สั่งซื้อ {{ stat.order_count }} ครั้ง
             </div>
+
+            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}" class="view-detail-btn">
+                ดูรายละเอียด →
+            </a>
         </div>
         {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-state-icon">📭</div>
+        <h3>ไม่พบข้อมูลสินค้า</h3>
+        <p>ไม่มีข้อมูลการสั่งซื้อในช่วงเวลาที่เลือก</p>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}
