@@ -2042,18 +2042,6 @@ def create_invoice_from_selected_dns(request):
 
     customer = get_object_or_404(Customer, pk=customer_id)
 
-    # Check if invoice already exists for this customer and month (check with type)
-    existing = Invoice.objects.filter(
-        customer=customer,
-        invoice_year=year,
-        invoice_month=month,
-        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE
-    ).first()
-
-    if existing:
-        messages.warning(request, f"Invoice สำหรับ {customer.name} เดือน {month}/{year} มีอยู่แล้ว")
-        return redirect("dashboard:invoice_detail", invoice_id=existing.id)
-
     # Get selected delivery notes
     delivery_notes = DeliveryNote.objects.filter(
         id__in=dn_ids,
