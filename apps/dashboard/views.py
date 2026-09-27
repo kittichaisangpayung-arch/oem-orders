@@ -1686,11 +1686,12 @@ def create_invoice(request):
 
     customer = get_object_or_404(Customer, pk=customer_id)
 
-    # Check if invoice already exists
+    # Check if invoice already exists (check with invoice_type)
     existing = Invoice.objects.filter(
         customer=customer,
         invoice_year=year,
-        invoice_month=month
+        invoice_month=month,
+        invoice_type=Invoice.InvoiceType.BILLING_STATEMENT
     ).first()
 
     if existing:
@@ -1925,11 +1926,12 @@ def create_manual_invoice(request):
 
     customer = get_object_or_404(Customer, pk=customer_id)
 
-    # Check if invoice already exists for this customer and month
+    # Check if invoice already exists for this customer and month (check with type)
     existing = Invoice.objects.filter(
         customer=customer,
         invoice_year=year,
-        invoice_month=month
+        invoice_month=month,
+        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE
     ).first()
 
     if existing:
@@ -2040,11 +2042,12 @@ def create_invoice_from_selected_dns(request):
 
     customer = get_object_or_404(Customer, pk=customer_id)
 
-    # Check if invoice already exists for this customer and month
+    # Check if invoice already exists for this customer and month (check with type)
     existing = Invoice.objects.filter(
         customer=customer,
         invoice_year=year,
-        invoice_month=month
+        invoice_month=month,
+        invoice_type=Invoice.InvoiceType.DETAILED_INVOICE
     ).first()
 
     if existing:
