@@ -181,8 +181,8 @@ class Invoice(models.Model):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["customer", "invoice_year", "invoice_month"],
-                name="unique_invoice_per_customer_month"
+                fields=["customer", "invoice_year", "invoice_month", "invoice_type"],
+                name="unique_invoice_per_customer_month_type"
             ),
         ]
 
