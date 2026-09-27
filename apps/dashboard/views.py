@@ -1832,6 +1832,12 @@ def edit_invoice(request, invoice_id):
                 invoice.invoice_number = new_invoice_number
                 invoice.save(update_fields=["invoice_number"])
 
+        # Update PO numbers
+        new_po_numbers = request.POST.get("po_numbers", "").strip()
+        if new_po_numbers != invoice.po_numbers:
+            invoice.po_numbers = new_po_numbers
+            invoice.save(update_fields=["po_numbers"])
+
         # Update line item external invoice numbers
         for line_item in invoice.line_items.all():
             invoice_no_key = f"invoice_no_{line_item.id}"

@@ -10,11 +10,17 @@
         <!-- Invoice Number -->
         <div style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #e9ecef;">
             <h3 style="margin-bottom: 15px; color: #495057;">เลขที่เอกสารรวม</h3>
-            <div>
+            <div style="margin-bottom: 20px;">
                 <label style="display: block; margin-bottom: 8px; font-weight: bold;">Invoice Number:</label>
                 <input type="text" name="invoice_number" value="{{ invoice.invoice_number }}" required
                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: monospace;">
                 <small style="display: block; margin-top: 5px; color: #6c757d;">เลขที่เอกสารรวบรวม Invoice</small>
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">PO Number:</label>
+                <input type="text" name="po_numbers" value="{{ invoice.po_numbers }}"
+                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; font-family: monospace;">
+                <small style="display: block; margin-top: 5px; color: #6c757d;">หมายเลข PO (Purchase Order)</small>
             </div>
         </div>
 
