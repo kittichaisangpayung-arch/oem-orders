@@ -287,7 +287,7 @@
                 {% if item.product__image %}
                 <img src="{{ item.product__image.url }}" alt="{{ item.product__description }}">
                 {% else %}
-                <img src="{% static 'placeholder.png' %}" alt="No image">
+                <div style="width: 80px; height: 80px; border-radius: 12px; background: var(--cream); border: 3px solid var(--cream-dark); display: flex; align-items: center; justify-content: center; font-size: 40px;">📦</div>
                 {% endif %}
                 <div class="info">
                     <div class="barcode">{{ item.product__barcode }}</div>
