@@ -127,11 +127,9 @@ document.addEventListener('DOMContentLoaded', function() {
         <button onclick="window.print()" style="background:#17a2b8; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🖨️ พิมพ์ Invoice</button>
         <a href="{% url 'dashboard:invoice_receipt' invoice.id %}" target="_blank" style="background: #28a745; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">📄 ใบเสร็จ (Receipt)</a>
         <a href="{% url 'dashboard:invoice_list' %}" style="background: #6c757d; color: #fff; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">← กลับ</a>
+        {% if invoice.status == 'DRAFT' %}
         <a href="{% url 'dashboard:edit_invoice' invoice.id %}" style="background: #ffc107; color: #000; padding: 8px 16px; border-radius: 4px; text-decoration: none; margin-left: 8px;">✏️ แก้ไข</a>
-        <form method="post" action="{% url 'dashboard:delete_invoice' invoice.id %}" style="display: inline; margin-left: 8px;" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะลบ Invoice นี้?');">
-            {% csrf_token %}
-            <button type="submit" style="background:#dc3545; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer;">🗑️ ลบ</button>
-        </form>
+        {% endif %}
     </div>
 
     <!-- PAGE 1: Invoice Document -->
