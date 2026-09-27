@@ -220,7 +220,7 @@ class InvoiceLineItem(models.Model):
     """Line item in an invoice - one line per delivery note."""
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="line_items")
-    delivery_note = models.ForeignKey(DeliveryNote, on_delete=models.PROTECT, related_name="invoice_items")
+    delivery_note = models.ForeignKey(DeliveryNote, on_delete=models.PROTECT, related_name="invoice_items", null=True, blank=True)
 
     # External invoice number from other system
     external_invoice_number = models.CharField(max_length=100, blank=True)
