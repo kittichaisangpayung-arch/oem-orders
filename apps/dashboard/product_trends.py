@@ -5,7 +5,6 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Avg, Count, Q
 from django.shortcuts import render, get_object_or_404
 
@@ -15,7 +14,6 @@ from apps.ingestion.models import POLineItem, PurchaseOrderBatch
 
 
 @allow_embedding
-@login_required
 def product_trend_list(request):
     """List all products with trend summary."""
 
@@ -72,7 +70,6 @@ def product_trend_list(request):
 
 
 @allow_embedding
-@login_required
 def product_trend_detail(request, product_id):
     """Detailed trend analysis for a specific product."""
 
@@ -202,7 +199,6 @@ def product_trend_detail(request, product_id):
 
 
 @allow_embedding
-@login_required
 def product_comparison(request):
     """Compare trends of multiple products side by side."""
 
