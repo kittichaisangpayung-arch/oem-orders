@@ -1,69 +1,96 @@
 """
 Product trend analysis views for historical data analysis
 """
+import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
 
 from django.db.models import Sum, Avg, Count, Q
 from django.shortcuts import render, get_object_or_404
+from django.utils import timezone
 
 from apps.core.framing import allow_embedding
 from apps.core.models import Product, Store
 from apps.ingestion.models import POLineItem, PurchaseOrderBatch
 
+THAI_MONTHS = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
+]
+
+
+def _month_range(year, month):
+    """Return aware [start, end) datetimes covering one calendar month."""
+    tz = timezone.get_current_timezone()
+    start = datetime(year, month, 1, tzinfo=tz)
+    end = datetime(year + month // 12, month % 12 + 1, 1, tzinfo=tz)
+    return start, end
+
+
+def _shift_month(year, month, delta):
+    index = year * 12 + (month - 1) + delta
+    return index // 12, index % 12 + 1
+
 
 @allow_embedding
 def product_trend_list(request):
-    """List all products with trend summary."""
+    """Product summary for one calendar month (?month=YYYY-MM, default: current month)."""
 
-    # Get date range filter (default: last 6 months)
-    months = int(request.GET.get('months', 6))
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=months*30)
+    today = timezone.localdate()
+    try:
+        selected = datetime.strptime(request.GET.get('month', ''), '%Y-%m')
+        year, month = selected.year, selected.month
+    except ValueError:
+        year, month = today.year, today.month
 
-    # Get all products with orders in the period
-    products = Product.objects.filter(
-        is_active=True,
-        line_items__purchase_order__batch__uploaded_at__gte=start_date
-    ).distinct().order_by('sort_rank', 'barcode')
+    start_date, end_date = _month_range(year, month)
 
-    product_stats = []
+    line_items = POLineItem.objects.filter(
+        product__is_active=True,
+        purchase_order__batch__uploaded_at__gte=start_date,
+        purchase_order__batch__uploaded_at__lt=end_date,
+    )
 
-    for product in products:
-        # Get line items for this product in the period
-        line_items = POLineItem.objects.filter(
-            product=product,
-            purchase_order__batch__uploaded_at__gte=start_date
-        )
+    rows = line_items.values('product').annotate(
+        total_qty=Sum('qty2'),
+        total_value=Sum('line_total'),
+        avg_price=Avg('unit_amount'),
+        order_count=Count('purchase_order__batch', distinct=True),
+    )
+    products = Product.objects.in_bulk([r['product'] for r in rows])
 
-        # Calculate statistics
-        total_qty = line_items.aggregate(total=Sum('qty2'))['total'] or 0
-        total_value = line_items.aggregate(total=Sum('line_total'))['total'] or 0
-        order_count = line_items.values('purchase_order__batch_id').distinct().count()
-        avg_price = line_items.aggregate(avg=Avg('unit_amount'))['avg'] or 0
-
-        # Get last order date
-        last_order = line_items.order_by('-purchase_order__batch__uploaded_at').first()
-        last_order_date = last_order.purchase_order.batch.uploaded_at if last_order else None
-
-        product_stats.append({
-            'product': product,
-            'total_qty': total_qty,
-            'total_value': total_value,
-            'order_count': order_count,
-            'avg_price': avg_price,
-            'last_order_date': last_order_date,
-        })
-
-    # Sort by total quantity (most ordered first)
+    product_stats = [{
+        'product': products[r['product']],
+        'total_qty': r['total_qty'] or 0,
+        'total_value': r['total_value'] or 0,
+        'order_count': r['order_count'],
+        'avg_price': r['avg_price'] or 0,
+    } for r in rows]
     product_stats.sort(key=lambda x: x['total_qty'], reverse=True)
+
+    available_months = [
+        d.strftime('%Y-%m') for d in
+        PurchaseOrderBatch.objects.dates('uploaded_at', 'month', order='DESC')
+    ]
+
+    prev_year, prev_month = _shift_month(year, month, -1)
+    next_year, next_month = _shift_month(year, month, 1)
+    has_next = (next_year, next_month) <= (today.year, today.month)
 
     context = {
         'product_stats': product_stats,
-        'months': months,
+        'selected_month': f'{year:04d}-{month:02d}',
+        'month_label': f'{THAI_MONTHS[month - 1]} {year + 543}',
+        'available_months': [
+            (m, f'{THAI_MONTHS[int(m[5:]) - 1]} {int(m[:4]) + 543}') for m in available_months
+        ],
+        'prev_month': f'{prev_year:04d}-{prev_month:02d}',
+        'next_month': f'{next_year:04d}-{next_month:02d}' if has_next else None,
         'start_date': start_date,
-        'end_date': end_date,
+        'end_date': end_date - timedelta(days=1),
+        'grand_total_qty': sum(p['total_qty'] for p in product_stats),
+        'grand_total_value': sum(p['total_value'] for p in product_stats),
     }
 
     return render(request, 'dashboard/product_trend_list.html', context)
@@ -179,6 +206,7 @@ def product_trend_detail(request, product_id):
 
     context = {
         'product': product,
+        'back_month': request.GET.get('month', '') if re.fullmatch(r'\d{4}-\d{2}', request.GET.get('month', '')) else '',
         'monthly_trend': monthly_trend,
         'store_distribution': store_distribution,
         'batch_history': batch_history,

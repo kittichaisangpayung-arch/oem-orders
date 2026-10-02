@@ -74,6 +74,18 @@
     background: var(--pink);
     color: #fff;
 }
+.period-buttons select.period-btn {
+    cursor: pointer;
+    font-family: inherit;
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -207,17 +219,30 @@
     <div class="filter-card">
         <div class="filter-info">
             <div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">ช่วงเวลา</div>
-                <div style="font-weight: 600; color: var(--text-dark);">{{ start_date|date:"d/m/Y" }} - {{ end_date|date:"d/m/Y" }}</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">เดือน</div>
+                <div style="font-weight: 700; font-size: 20px; color: var(--text-dark);">{{ month_label }}</div>
+                <div style="font-size: 12px; color: var(--text-muted);">{{ start_date|date:"d/m/Y" }} - {{ end_date|date:"d/m/Y" }}</div>
             </div>
-            <div class="stat-badge">
-                {{ product_stats|length }} สินค้า
-            </div>
+            <div class="stat-badge">{{ product_stats|length }} สินค้า</div>
+            <div class="stat-badge">รวม {{ grand_total_qty|intcomma }} ชิ้น</div>
+            <div class="stat-badge">฿{{ grand_total_value|floatformat:0|intcomma }}</div>
         </div>
         <div class="period-buttons">
-            <a href="?months=3" class="period-btn {% if months == 3 %}active{% endif %}">3 เดือน</a>
-            <a href="?months=6" class="period-btn {% if months == 6 %}active{% endif %}">6 เดือน</a>
-            <a href="?months=12" class="period-btn {% if months == 12 %}active{% endif %}">12 เดือน</a>
+            <a href="?month={{ prev_month }}" class="period-btn" aria-label="เดือนก่อนหน้า">← เดือนก่อน</a>
+            <form method="get" style="margin: 0;">
+                <label for="month-select" class="visually-hidden">เลือกเดือน</label>
+                <select id="month-select" name="month" class="period-btn" onchange="this.form.submit()">
+                    {% for value, label in available_months %}
+                    <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>{{ label }}</option>
+                    {% empty %}
+                    <option value="{{ selected_month }}" selected>{{ month_label }}</option>
+                    {% endfor %}
+                </select>
+                <noscript><button type="submit" class="period-btn">ดู</button></noscript>
+            </form>
+            {% if next_month %}
+            <a href="?month={{ next_month }}" class="period-btn" aria-label="เดือนถัดไป">เดือนถัดไป →</a>
+            {% endif %}
         </div>
     </div>
 
@@ -257,7 +282,7 @@
                 สั่งซื้อ {{ stat.order_count }} ครั้ง
             </div>
 
-            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?months={{ months }}" class="view-detail-btn">
+            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?month={{ selected_month }}" class="view-detail-btn">
                 ดูรายละเอียด →
             </a>
         </div>
@@ -267,7 +292,7 @@
     <div class="empty-state">
         <div class="empty-state-icon">📭</div>
         <h3>ไม่พบข้อมูลสินค้า</h3>
-        <p>ไม่มีข้อมูลการสั่งซื้อในช่วงเวลาที่เลือก</p>
+        <p>ไม่มีข้อมูลการสั่งซื้อในเดือน{{ month_label }}</p>
     </div>
     {% endif %}
 </div>
