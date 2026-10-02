@@ -8,7 +8,7 @@
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <a href="{% url 'dashboard:product_trend_list' %}{% if back_month %}?month={{ back_month }}{% endif %}" class="btn btn-sm btn-outline-secondary mb-2">
+            <a href="{% url 'dashboard:product_trend_list' %}{% if back_query %}?{{ back_query }}{% endif %}" class="btn btn-sm btn-outline-secondary mb-2">
                 ← Back to List
             </a>
             <h2>
@@ -23,9 +23,9 @@
 
         <!-- Time Range Filter -->
         <div class="btn-group" role="group">
-            <a href="?months=6{% if back_month %}&month={{ back_month }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
-            <a href="?months=12{% if back_month %}&month={{ back_month }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
-            <a href="?months=24{% if back_month %}&month={{ back_month }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 24 %}active{% endif %}">24 Months</a>
+            <a href="?months=6{% if back_query %}&{{ back_query }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 Months</a>
+            <a href="?months=12{% if back_query %}&{{ back_query }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 Months</a>
+            <a href="?months=24{% if back_query %}&{{ back_query }}{% endif %}" class="btn btn-sm btn-outline-primary {% if months == 24 %}active{% endif %}">24 Months</a>
         </div>
     </div>
 

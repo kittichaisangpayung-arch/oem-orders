@@ -1,7 +1,6 @@
 """
 Product trend analysis views for historical data analysis
 """
-import re
 from collections import defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -9,6 +8,7 @@ from decimal import Decimal
 from django.db.models import Sum, Avg, Count, Q
 from django.shortcuts import render, get_object_or_404
 from django.utils import timezone
+from django.utils.http import urlencode
 
 from apps.core.framing import allow_embedding
 from apps.core.models import Product, Store
@@ -28,67 +28,79 @@ def _month_range(year, month):
     return start, end
 
 
-def _shift_month(year, month, delta):
-    index = year * 12 + (month - 1) + delta
-    return index // 12, index % 12 + 1
+def _month_label(key):
+    year, month = int(key[:4]), int(key[5:])
+    return f'{THAI_MONTHS[month - 1]} {year + 543}'
+
+
+def _selected_months(request):
+    """Valid, de-duplicated ?month=YYYY-MM values, newest first."""
+    months = set()
+    for value in request.GET.getlist('month'):
+        try:
+            months.add(datetime.strptime(value, '%Y-%m').strftime('%Y-%m'))
+        except ValueError:
+            continue
+    return sorted(months, reverse=True)
 
 
 @allow_embedding
 def product_trend_list(request):
-    """Product summary for one calendar month (?month=YYYY-MM, default: current month)."""
+    """Product summary for one or more calendar months (?month=YYYY-MM&month=..., default: current month)."""
 
-    today = timezone.localdate()
-    try:
-        selected = datetime.strptime(request.GET.get('month', ''), '%Y-%m')
-        year, month = selected.year, selected.month
-    except ValueError:
-        year, month = today.year, today.month
+    selected_months = _selected_months(request) or [timezone.localdate().strftime('%Y-%m')]
 
-    start_date, end_date = _month_range(year, month)
+    stats = {}
+    for key in selected_months:
+        start, end = _month_range(int(key[:4]), int(key[5:]))
+        rows = POLineItem.objects.filter(
+            product__is_active=True,
+            purchase_order__batch__uploaded_at__gte=start,
+            purchase_order__batch__uploaded_at__lt=end,
+        ).values('product').annotate(
+            qty=Sum('qty2'),
+            value=Sum('line_total'),
+            price_sum=Sum('unit_amount'),
+            line_count=Count('id'),
+            order_count=Count('purchase_order__batch', distinct=True),
+        )
+        for r in rows:
+            s = stats.setdefault(r['product'], {
+                'total_qty': 0, 'total_value': 0, 'price_sum': 0,
+                'line_count': 0, 'order_count': 0, 'by_month': {},
+            })
+            s['total_qty'] += r['qty'] or 0
+            s['total_value'] += r['value'] or 0
+            s['price_sum'] += r['price_sum'] or 0
+            s['line_count'] += r['line_count']
+            s['order_count'] += r['order_count']
+            s['by_month'][key] = r['qty'] or 0
 
-    line_items = POLineItem.objects.filter(
-        product__is_active=True,
-        purchase_order__batch__uploaded_at__gte=start_date,
-        purchase_order__batch__uploaded_at__lt=end_date,
-    )
-
-    rows = line_items.values('product').annotate(
-        total_qty=Sum('qty2'),
-        total_value=Sum('line_total'),
-        avg_price=Avg('unit_amount'),
-        order_count=Count('purchase_order__batch', distinct=True),
-    )
-    products = Product.objects.in_bulk([r['product'] for r in rows])
-
-    product_stats = [{
-        'product': products[r['product']],
-        'total_qty': r['total_qty'] or 0,
-        'total_value': r['total_value'] or 0,
-        'order_count': r['order_count'],
-        'avg_price': r['avg_price'] or 0,
-    } for r in rows]
+    products = Product.objects.in_bulk(stats.keys())
+    product_stats = []
+    for product_id, s in stats.items():
+        product_stats.append({
+            'product': products[product_id],
+            'total_qty': s['total_qty'],
+            'total_value': s['total_value'],
+            'order_count': s['order_count'],
+            'avg_price': s['price_sum'] / s['line_count'] if s['line_count'] else 0,
+            'monthly': [
+                (_month_label(key), s['by_month'].get(key, 0)) for key in reversed(selected_months)
+            ],
+        })
     product_stats.sort(key=lambda x: x['total_qty'], reverse=True)
 
-    available_months = [
-        d.strftime('%Y-%m') for d in
-        PurchaseOrderBatch.objects.dates('uploaded_at', 'month', order='DESC')
-    ]
-
-    prev_year, prev_month = _shift_month(year, month, -1)
-    next_year, next_month = _shift_month(year, month, 1)
-    has_next = (next_year, next_month) <= (today.year, today.month)
+    month_choices = {
+        d.strftime('%Y-%m') for d in PurchaseOrderBatch.objects.dates('uploaded_at', 'month')
+    } | set(selected_months)
 
     context = {
         'product_stats': product_stats,
-        'selected_month': f'{year:04d}-{month:02d}',
-        'month_label': f'{THAI_MONTHS[month - 1]} {year + 543}',
-        'available_months': [
-            (m, f'{THAI_MONTHS[int(m[5:]) - 1]} {int(m[:4]) + 543}') for m in available_months
-        ],
-        'prev_month': f'{prev_year:04d}-{prev_month:02d}',
-        'next_month': f'{next_year:04d}-{next_month:02d}' if has_next else None,
-        'start_date': start_date,
-        'end_date': end_date - timedelta(days=1),
+        'selected_months': selected_months,
+        'selected_labels': [_month_label(m) for m in reversed(selected_months)],
+        'month_query': urlencode([('month', m) for m in selected_months]),
+        'available_months': [(m, _month_label(m)) for m in sorted(month_choices, reverse=True)],
         'grand_total_qty': sum(p['total_qty'] for p in product_stats),
         'grand_total_value': sum(p['total_value'] for p in product_stats),
     }
@@ -206,7 +218,7 @@ def product_trend_detail(request, product_id):
 
     context = {
         'product': product,
-        'back_month': request.GET.get('month', '') if re.fullmatch(r'\d{4}-\d{2}', request.GET.get('month', '')) else '',
+        'back_query': urlencode([('month', m) for m in _selected_months(request)]),
         'monthly_trend': monthly_trend,
         'store_distribution': store_distribution,
         'batch_history': batch_history,

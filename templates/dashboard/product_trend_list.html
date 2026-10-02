@@ -74,9 +74,52 @@
     background: var(--pink);
     color: #fff;
 }
-.period-buttons select.period-btn {
+button.period-btn {
     cursor: pointer;
     font-family: inherit;
+}
+.month-options {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+.month-chip input {
+    position: absolute;
+    opacity: 0;
+}
+.month-chip span {
+    display: inline-block;
+    padding: 6px 14px;
+    border: 2px solid var(--pink);
+    border-radius: 20px;
+    color: var(--pink-dark);
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.month-chip input:checked + span {
+    background: var(--pink);
+    color: #fff;
+}
+.month-chip input:focus-visible + span {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+}
+.month-breakdown {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+}
+.month-breakdown div {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed var(--cream-dark);
 }
 .visually-hidden {
     position: absolute;
@@ -216,35 +259,30 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="filter-card">
+    <form method="get" class="filter-card month-filter">
         <div class="filter-info">
             <div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">เดือน</div>
-                <div style="font-weight: 700; font-size: 20px; color: var(--text-dark);">{{ month_label }}</div>
-                <div style="font-size: 12px; color: var(--text-muted);">{{ start_date|date:"d/m/Y" }} - {{ end_date|date:"d/m/Y" }}</div>
+                <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">เดือนที่เลือก ({{ selected_months|length }})</div>
+                <div style="font-weight: 700; font-size: 18px; color: var(--text-dark);">{{ selected_labels|join:", " }}</div>
             </div>
             <div class="stat-badge">{{ product_stats|length }} สินค้า</div>
             <div class="stat-badge">รวม {{ grand_total_qty|intcomma }} ชิ้น</div>
             <div class="stat-badge">฿{{ grand_total_value|floatformat:0|intcomma }}</div>
         </div>
+        <fieldset class="month-options">
+            <legend class="visually-hidden">เลือกเดือน (เลือกได้หลายเดือน)</legend>
+            {% for value, label in available_months %}
+            <label class="month-chip">
+                <input type="checkbox" name="month" value="{{ value }}" {% if value in selected_months %}checked{% endif %}>
+                <span>{{ label }}</span>
+            </label>
+            {% endfor %}
+        </fieldset>
         <div class="period-buttons">
-            <a href="?month={{ prev_month }}" class="period-btn" aria-label="เดือนก่อนหน้า">← เดือนก่อน</a>
-            <form method="get" style="margin: 0;">
-                <label for="month-select" class="visually-hidden">เลือกเดือน</label>
-                <select id="month-select" name="month" class="period-btn" onchange="this.form.submit()">
-                    {% for value, label in available_months %}
-                    <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>{{ label }}</option>
-                    {% empty %}
-                    <option value="{{ selected_month }}" selected>{{ month_label }}</option>
-                    {% endfor %}
-                </select>
-                <noscript><button type="submit" class="period-btn">ดู</button></noscript>
-            </form>
-            {% if next_month %}
-            <a href="?month={{ next_month }}" class="period-btn" aria-label="เดือนถัดไป">เดือนถัดไป →</a>
-            {% endif %}
+            <button type="submit" class="period-btn active">แสดงผล</button>
+            <a href="?" class="period-btn">เดือนนี้</a>
         </div>
-    </div>
+    </form>
 
     <!-- Product Grid -->
     {% if product_stats %}
@@ -282,7 +320,15 @@
                 สั่งซื้อ {{ stat.order_count }} ครั้ง
             </div>
 
-            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?month={{ selected_month }}" class="view-detail-btn">
+            {% if stat.monthly|length > 1 %}
+            <div class="month-breakdown">
+                {% for label, qty in stat.monthly %}
+                <div><span>{{ label }}</span><strong>{{ qty|intcomma }}</strong></div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?{{ month_query }}" class="view-detail-btn">
                 ดูรายละเอียด →
             </a>
         </div>
@@ -292,7 +338,7 @@
     <div class="empty-state">
         <div class="empty-state-icon">📭</div>
         <h3>ไม่พบข้อมูลสินค้า</h3>
-        <p>ไม่มีข้อมูลการสั่งซื้อในเดือน{{ month_label }}</p>
+        <p>ไม่มีข้อมูลการสั่งซื้อในเดือน{{ selected_labels|join:", " }}</p>
     </div>
     {% endif %}
 </div>
