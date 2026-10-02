@@ -160,6 +160,17 @@ else:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Origins allowed to embed the product trend pages in an <iframe>
+# e.g. FRAME_ANCESTORS=https://example.com,https://www.example.com
+FRAME_ANCESTORS = [o.strip() for o in os.environ.get('FRAME_ANCESTORS', '').split(',') if o.strip()]
+
+# Cross-site iframes only receive cookies marked SameSite=None; Secure (requires HTTPS)
+if not DEBUG:
+    SESSION_COOKIE_SAMESITE = 'None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SECURE = True
+
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'dashboard:production'
 LOGOUT_REDIRECT_URL = 'login'

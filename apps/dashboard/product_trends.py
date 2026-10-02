@@ -9,10 +9,12 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Avg, Count, Q
 from django.shortcuts import render, get_object_or_404
 
+from apps.core.framing import allow_embedding
 from apps.core.models import Product, Store
 from apps.ingestion.models import POLineItem, PurchaseOrderBatch
 
 
+@allow_embedding
 @login_required
 def product_trend_list(request):
     """List all products with trend summary."""
@@ -69,6 +71,7 @@ def product_trend_list(request):
     return render(request, 'dashboard/product_trend_list.html', context)
 
 
+@allow_embedding
 @login_required
 def product_trend_detail(request, product_id):
     """Detailed trend analysis for a specific product."""
@@ -198,6 +201,7 @@ def product_trend_detail(request, product_id):
     return render(request, 'dashboard/product_trend_detail.html', context)
 
 
+@allow_embedding
 @login_required
 def product_comparison(request):
     """Compare trends of multiple products side by side."""
