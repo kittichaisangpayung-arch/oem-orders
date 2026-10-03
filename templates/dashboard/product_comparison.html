@@ -1,197 +1,435 @@
 {% extends "base.html" %}
 {% load humanize %}
-{% load dict_extras %}
 
-{% block title %}เปรียบเทียบสินค้า{% endblock %}
+{% block title %}เปรียบเทียบแนวโน้มสินค้า{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<style>
+.compare-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    --series-1: #2a78d6;
+    --series-2: #eb6834;
+    --series-3: #1baf7a;
+    --series-4: #eda100;
+    --series-5: #e87ba4;
+    --series-6: #008300;
+    --series-7: #4a3aa7;
+    --series-8: #e34948;
+}
+.compare-header {
+    background: linear-gradient(135deg, var(--pink-light), var(--purple-light));
+    padding: 24px 30px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.compare-header h2 {
+    margin: 0;
+    font-size: 28px;
+    color: var(--pink-dark);
+}
+.back-link {
+    color: var(--pink-dark);
+    font-weight: 600;
+    text-decoration: none;
+}
+.panel {
+    background: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+}
+.panel h3 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    color: var(--text-dark);
+}
+.panel-note {
+    font-weight: 400;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.product-search {
+    width: 100%;
+    max-width: 360px;
+    padding: 8px 14px;
+    border: 2px solid var(--cream-dark);
+    border-radius: 20px;
+    font-family: inherit;
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+.product-search:focus-visible {
+    outline: 3px solid var(--purple);
+    outline-offset: 1px;
+}
+.product-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+}
+.product-chip input {
+    position: absolute;
+    opacity: 0;
+}
+.product-chip > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 2px solid var(--cream-dark);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--text-dark);
+    font-size: 13px;
+    cursor: pointer;
+}
+.product-chip input:checked + span {
+    border-color: var(--pink);
+    background: var(--pink-light);
+    font-weight: 600;
+}
+.product-chip input:disabled + span {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+.product-chip input:focus-visible + span {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+}
+.swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex: none;
+}
+.metric-toggle {
+    display: inline-flex;
+    border: 2px solid var(--pink);
+    border-radius: 20px;
+    overflow: hidden;
+}
+.metric-toggle input {
+    position: absolute;
+    opacity: 0;
+}
+.metric-toggle span {
+    display: inline-block;
+    padding: 6px 16px;
+    color: var(--pink-dark);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.metric-toggle input:checked + span {
+    background: var(--pink);
+    color: #fff;
+}
+.metric-toggle input:focus-visible + span {
+    outline: 3px solid var(--purple);
+    outline-offset: -3px;
+}
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.summary-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(184, 132, 219, 0.12);
+    border-top: 4px solid var(--card-color);
+}
+.summary-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 6px;
+}
+.summary-qty {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-dark);
+}
+.summary-value {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.chart-wrap {
+    position: relative;
+    height: 360px;
+}
+.compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.compare-table th,
+.compare-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--cream-dark);
+    text-align: right;
+    white-space: nowrap;
+}
+.compare-table th:first-child,
+.compare-table td:first-child {
+    text-align: left;
+}
+.compare-table thead th {
+    color: var(--text-muted);
+    font-weight: 600;
+    vertical-align: bottom;
+}
+.compare-table tfoot td {
+    font-weight: 700;
+    border-bottom: 0;
+}
+.table-scroll {
+    overflow-x: auto;
+}
+.muted-dash {
+    color: var(--text-muted);
+}
+.empty-state {
+    text-align: center;
+    padding: 50px 20px;
+    color: var(--text-muted);
+}
+</style>
+
+<div class="compare-container">
+    <div class="compare-header">
         <div>
-            <a href="{% url 'dashboard:product_comparison' %}?months={{ months }}" class="btn btn-sm btn-outline-secondary mb-2">
-                ← เปลี่ยนการเลือก
-            </a>
-            <h2>📊 เปรียบเทียบสินค้า</h2>
+            <a href="{% url 'dashboard:product_trend_list' %}?{{ month_query }}" class="back-link">← แนวโน้มสินค้า</a>
+            <h2>📈 เปรียบเทียบแนวโน้มสินค้า</h2>
         </div>
-
-        <!-- Time Range Filter -->
-        <div class="btn-group" role="group">
-            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=3"
-               class="btn btn-sm btn-outline-primary {% if months == 3 %}active{% endif %}">3 เดือน</a>
-            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=6"
-               class="btn btn-sm btn-outline-primary {% if months == 6 %}active{% endif %}">6 เดือน</a>
-            <a href="?{% for data in comparison_data %}products={{ data.product.id }}&{% endfor %}months=12"
-               class="btn btn-sm btn-outline-primary {% if months == 12 %}active{% endif %}">12 เดือน</a>
-        </div>
+        <noscript><button type="submit" form="compareForm">แสดงผล</button></noscript>
     </div>
 
-    <div class="alert alert-info">
-        กำลังเปรียบเทียบ <strong>{{ comparison_data|length }}</strong> สินค้า จาก
-        <strong>{{ start_date|date:"d/m/Y" }}</strong> ถึง <strong>{{ end_date|date:"d/m/Y" }}</strong>
-    </div>
+    <form method="get" id="compareForm">
+        <div class="panel">
+            <h3>สินค้า <span class="panel-note">เลือกได้สูงสุด {{ max_products }} รายการ (เลือกแล้ว <span id="productCount">{{ series|length }}</span>)</span></h3>
+            <label class="visually-hidden" for="productSearch">ค้นหาสินค้า</label>
+            <input type="search" id="productSearch" class="product-search" placeholder="🔍 พิมพ์ชื่อหรือบาร์โค้ด...">
+            <fieldset class="product-options">
+                <legend class="visually-hidden">เลือกสินค้าที่ต้องการเปรียบเทียบ</legend>
+                {% for product in all_products %}
+                <label class="product-chip" data-search="{{ product.description|lower }} {{ product.barcode }}">
+                    <input type="checkbox" name="products" value="{{ product.id }}"
+                           {% if product.id in selected_product_ids %}checked{% endif %}>
+                    <span>
+                        {% for s in series %}{% if s.product.id == product.id %}<span class="swatch" style="background: var(--series-{{ s.slot }})" aria-hidden="true"></span>{% endif %}{% endfor %}
+                        {{ product.description|truncatechars:40 }}
+                    </span>
+                </label>
+                {% endfor %}
+            </fieldset>
+        </div>
 
-    <!-- Summary Cards -->
-    <div class="row mb-4">
-        {% for data in comparison_data %}
-        <div class="col-md-6 col-lg-4 col-xl-3">
-            <div class="card">
-                <div class="card-body">
-                    <h6 class="text-muted mb-2">
-                        {% if data.product.image %}
-                        <img src="{{ data.product.image.url }}" alt="" style="width: 24px; height: 24px; object-fit: cover; border-radius: 4px;">
-                        {% endif %}
-                        {{ data.product.description|truncatewords:5 }}
-                    </h6>
-                    <h4 class="mb-1">{{ data.total_qty|intcomma }}</h4>
-                    <small class="text-muted">฿{{ data.total_value|floatformat:0|intcomma }}</small>
-                </div>
+        <div class="panel">
+            <h3>ช่วงเดือน <span class="panel-note">เดือนที่เลือก: {{ selected_labels|join:", " }}</span></h3>
+            {% include "dashboard/_month_picker.html" %}
+        </div>
+
+        <div class="panel" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <h3 style="margin: 0;">แสดงเป็น</h3>
+            <div class="metric-toggle" role="radiogroup" aria-label="แสดงเป็น">
+                <label><input type="radio" name="metric" value="qty" {% if metric == 'qty' %}checked{% endif %}><span>จำนวน (ชิ้น)</span></label>
+                <label><input type="radio" name="metric" value="value" {% if metric == 'value' %}checked{% endif %}><span>มูลค่า (฿)</span></label>
             </div>
+        </div>
+    </form>
+
+    {% if series %}
+    <div class="summary-grid">
+        {% for s in series %}
+        <div class="summary-card" style="--card-color: var(--series-{{ s.slot }})">
+            <div class="summary-name">
+                <span class="swatch" style="background: var(--series-{{ s.slot }})" aria-hidden="true"></span>
+                <a href="{% url 'dashboard:product_trend_detail' s.product.id %}?{{ month_query }}" style="color: inherit;">{{ s.product.description|truncatechars:40 }}</a>
+            </div>
+            <div class="summary-qty">{{ s.total_qty|intcomma }} ชิ้น</div>
+            <div class="summary-value">฿{{ s.total_value|floatformat:0|intcomma }}</div>
         </div>
         {% endfor %}
     </div>
 
-    <!-- Comparison Chart -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">กราฟเปรียบเทียบรายเดือน</h5>
-        </div>
-        <div class="card-body">
-            <canvas id="comparisonChart" height="80"></canvas>
+    <div class="panel">
+        <h3>{% if metric == 'value' %}มูลค่ารายเดือน (฿){% else %}จำนวนรายเดือน (ชิ้น){% endif %}</h3>
+        <div class="chart-wrap">
+            <canvas id="compareChart" role="img"
+                    aria-label="กราฟเส้นเปรียบเทียบ{% if metric == 'value' %}มูลค่า{% else %}จำนวน{% endif %}รายเดือนของสินค้า {{ series|length }} รายการ รายละเอียดอยู่ในตารางด้านล่าง"></canvas>
         </div>
     </div>
 
-    <!-- Comparison Table -->
-    <div class="card">
-        <div class="card-header">
-            <h5 class="mb-0">ตารางเปรียบเทียบรายเดือน</h5>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>เดือน</th>
-                            {% for data in comparison_data %}
-                            <th class="text-end">
-                                {{ data.product.description|truncatewords:4 }}
-                                <br><small class="text-muted">{{ data.product.barcode }}</small>
-                            </th>
-                            {% endfor %}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for month in all_months reversed %}
-                        <tr>
-                            <td><strong>{{ month }}</strong></td>
-                            {% for data in comparison_data %}
-                            <td class="text-end">
-                                {% if data.monthly_data|get_item:month %}
-                                    {{ data.monthly_data|get_item:month|intcomma }}
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            {% endfor %}
-                        </tr>
+    <div class="panel">
+        <h3>ตารางรายเดือน</h3>
+        <div class="table-scroll">
+            <table class="compare-table">
+                <thead>
+                    <tr>
+                        <th scope="col">เดือน</th>
+                        {% for s in series %}
+                        <th scope="col">
+                            <span class="swatch" style="background: var(--series-{{ s.slot }})" aria-hidden="true"></span>
+                            {{ s.product.description|truncatechars:24 }}
+                            <br><small>{{ s.product.barcode }}</small>
+                        </th>
                         {% endfor %}
-                        <tr class="table-light fw-bold">
-                            <td>รวม</td>
-                            {% for data in comparison_data %}
-                            <td class="text-end">{{ data.total_qty|intcomma }}</td>
-                            {% endfor %}
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in table_rows %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        {% for cell in row.cells %}
+                        <td>
+                            {% if cell.qty %}
+                            {{ cell.qty|intcomma }}<br><small class="muted-dash">฿{{ cell.value|floatformat:0|intcomma }}</small>
+                            {% else %}<span class="muted-dash">-</span>{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>รวม</td>
+                        {% for s in series %}
+                        <td>{{ s.total_qty|intcomma }}<br><small class="muted-dash">฿{{ s.total_value|floatformat:0|intcomma }}</small></td>
+                        {% endfor %}
+                    </tr>
+                </tfoot>
+            </table>
         </div>
     </div>
+    {% else %}
+    <div class="panel empty-state">
+        <div style="font-size: 48px;">📈</div>
+        <h3>เลือกสินค้าอย่างน้อย 1 รายการด้านบน</h3>
+        <p>กราฟจะแสดงทันทีที่เลือก</p>
+    </div>
+    {% endif %}
 </div>
 
-<!-- Chart.js Script -->
+{{ chart_labels|json_script:"chartLabels" }}
+{{ chart_series|json_script:"chartSeries" }}
+<script>
+(function () {
+    var form = document.getElementById('compareForm');
+    var maxProducts = {{ max_products }};
+    var productBoxes = form.querySelectorAll('input[name="products"]');
+
+    function syncProductLimit() {
+        var n = form.querySelectorAll('input[name="products"]:checked').length;
+        document.getElementById('productCount').textContent = n;
+        productBoxes.forEach(function (b) {
+            b.disabled = !b.checked && n >= maxProducts;
+        });
+    }
+
+    productBoxes.forEach(function (box) {
+        box.addEventListener('change', function () {
+            syncProductLimit();
+            form.dispatchEvent(new Event('autosubmit'));
+        });
+    });
+    form.querySelectorAll('input[name="metric"]').forEach(function (radio) {
+        radio.addEventListener('change', function () {
+            form.dispatchEvent(new Event('autosubmit'));
+        });
+    });
+    syncProductLimit();
+
+    document.getElementById('productSearch').addEventListener('input', function (e) {
+        var term = e.target.value.trim().toLowerCase();
+        form.querySelectorAll('.product-chip').forEach(function (chip) {
+            chip.style.display = chip.dataset.search.includes(term) ? '' : 'none';
+        });
+    });
+})();
+</script>
+
+{% if series %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('comparisonChart').getContext('2d');
+(function () {
+    var root = getComputedStyle(document.querySelector('.compare-container'));
+    var labels = JSON.parse(document.getElementById('chartLabels').textContent);
+    var series = JSON.parse(document.getElementById('chartSeries').textContent);
+    var isValue = {% if metric == 'value' %}true{% else %}false{% endif %};
+    var fmt = function (v) {
+        return (isValue ? '฿' : '') + v.toLocaleString('th-TH', { maximumFractionDigits: 0 });
+    };
 
-    // Color palette (using accessible colors)
-    const colors = [
-        '#0d6efd', // Blue
-        '#198754', // Green
-        '#dc3545', // Red
-        '#fd7e14', // Orange
-        '#6f42c1', // Purple
-        '#0dcaf0', // Cyan
-    ];
-
-    const allMonths = {{ all_months|safe }};
-
-    const datasets = [
-        {% for data in comparison_data %}
-        {
-            label: '{{ data.product.description|truncatewords:6|escapejs }}',
-            data: allMonths.map(month => {
-                const monthlyData = {{ data.monthly_data|safe }};
-                return monthlyData[month] || 0;
-            }),
-            borderColor: colors[{{ forloop.counter0 }} % colors.length],
-            backgroundColor: colors[{{ forloop.counter0 }} % colors.length] + '20',
-            borderWidth: 2,
-            fill: false,
-            tension: 0.3,
-            pointRadius: 4,
-            pointHoverRadius: 6,
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-
-    const config = {
+    new Chart(document.getElementById('compareChart'), {
         type: 'line',
         data: {
-            labels: allMonths,
-            datasets: datasets
+            labels: labels,
+            datasets: series.map(function (s) {
+                var color = root.getPropertyValue('--series-' + s.slot).trim();
+                return {
+                    label: s.label,
+                    data: s.values,
+                    borderColor: color,
+                    backgroundColor: color,
+                    borderWidth: 2,
+                    cubicInterpolationMode: 'monotone',
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                };
+            }),
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
-            interaction: {
-                mode: 'index',
-                intersect: false,
-            },
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: {
-                    display: true,
                     position: 'top',
+                    labels: { usePointStyle: true, pointStyle: 'circle', color: '#5C4033', font: { family: 'Noto Sans Thai' } },
                 },
                 tooltip: {
+                    itemSort: function (a, b) { return b.parsed.y - a.parsed.y; },
                     callbacks: {
-                        label: function(context) {
-                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString();
-                        }
-                    }
-                }
+                        label: function (ctx) { return ' ' + ctx.dataset.label + ': ' + fmt(ctx.parsed.y); },
+                    },
+                },
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString();
-                        }
-                    },
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
-                    }
+                    ticks: { callback: fmt, color: '#9C8577' },
+                    grid: { color: 'rgba(92, 64, 51, 0.08)' },
+                    border: { display: false },
                 },
                 x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            }
-        }
-    };
-
-    new Chart(ctx, config);
-});
+                    ticks: { color: '#9C8577' },
+                    grid: { display: false },
+                },
+            },
+        },
+    });
+})();
 </script>
+{% endif %}
 {% endblock %}

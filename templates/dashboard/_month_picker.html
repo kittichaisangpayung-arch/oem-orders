@@ -1,0 +1,190 @@
+<style>
+.month-picker {
+    flex-basis: 100%;
+}
+.year-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid var(--cream-dark);
+}
+.year-tab {
+    padding: 6px 16px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    background: none;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.year-tab:hover {
+    color: var(--pink-dark);
+}
+.year-tab.active {
+    color: var(--pink-dark);
+    border-bottom-color: var(--pink);
+}
+.year-tab:focus-visible,
+.whole-year-btn:focus-visible {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+}
+.month-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 8px;
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+.month-options[hidden] {
+    display: none;
+}
+.month-chip input {
+    position: absolute;
+    opacity: 0;
+}
+.month-chip span {
+    display: inline-block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 6px 14px;
+    border: 2px solid var(--pink);
+    border-radius: 20px;
+    color: var(--pink-dark);
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+}
+.month-chip input:checked + span {
+    background: var(--pink);
+    color: #fff;
+}
+.month-chip input:focus-visible + span {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+}
+.month-chip input:disabled + span {
+    border-color: var(--cream-dark);
+    color: var(--text-muted);
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.whole-year-btn {
+    grid-column: span 2;
+    padding: 6px 14px;
+    border: 2px dashed var(--purple);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--purple);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+form.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+</style>
+<div class="month-picker">
+    <div class="year-tabs" role="group" aria-label="เลือกปี">
+        {% for group in year_groups %}
+        <button type="button" class="year-tab{% if group.year == active_year %} active{% endif %}"
+                data-year="{{ group.year }}" aria-pressed="{% if group.year == active_year %}true{% else %}false{% endif %}">
+            {{ group.label }}<span class="year-count" data-count-for="{{ group.year }}"></span>
+        </button>
+        {% endfor %}
+    </div>
+    {% for group in year_groups %}
+    <fieldset class="month-options" data-year="{{ group.year }}" {% if group.year != active_year %}hidden{% endif %}>
+        <legend class="visually-hidden">เลือกเดือนของปี {{ group.label }} (เลือกได้หลายเดือน)</legend>
+        {% for m in group.months %}
+        <label class="month-chip" title="{{ m.title }}">
+            <input type="checkbox" name="month" value="{{ m.value }}"
+                   {% if m.selected %}checked{% endif %} {% if not m.enabled %}disabled{% endif %}>
+            <span>{{ m.label }}</span>
+        </label>
+        {% endfor %}
+        <button type="button" class="whole-year-btn" data-year="{{ group.year }}">ทั้งปี {{ group.label }}</button>
+    </fieldset>
+    {% endfor %}
+</div>
+<script>
+(function () {
+    var picker = document.currentScript.previousElementSibling;
+    var form = picker.closest('form');
+    var timer;
+
+    function checkedMonths() {
+        return picker.querySelectorAll('input[name="month"]:checked');
+    }
+
+    function updateCounts() {
+        picker.querySelectorAll('[data-count-for]').forEach(function (el) {
+            var n = picker.querySelectorAll('fieldset[data-year="' + el.dataset.countFor + '"] input:checked').length;
+            el.textContent = n ? ' (' + n + ')' : '';
+        });
+    }
+
+    // Short delay so several quick clicks reload the page only once.
+    function submitSoon() {
+        updateCounts();
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            form.classList.add('is-loading');
+            form.submit();
+        }, 500);
+    }
+    form.addEventListener('autosubmit', submitSoon);
+
+    picker.querySelectorAll('input[name="month"]').forEach(function (box) {
+        box.addEventListener('change', function () {
+            if (!checkedMonths().length) {
+                box.checked = true;  // keep at least one month selected
+                return;
+            }
+            submitSoon();
+        });
+    });
+
+    picker.querySelectorAll('.year-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            picker.querySelectorAll('.year-tab').forEach(function (t) {
+                var on = t === tab;
+                t.classList.toggle('active', on);
+                t.setAttribute('aria-pressed', on ? 'true' : 'false');
+            });
+            picker.querySelectorAll('fieldset.month-options').forEach(function (fs) {
+                fs.hidden = fs.dataset.year !== tab.dataset.year;
+            });
+        });
+    });
+
+    picker.querySelectorAll('.whole-year-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var yearBoxes = picker.querySelectorAll('fieldset[data-year="' + btn.dataset.year + '"] input:not(:disabled)');
+            var allOn = Array.prototype.every.call(yearBoxes, function (b) { return b.checked; });
+            if (allOn && checkedMonths().length === yearBoxes.length) return;
+            yearBoxes.forEach(function (b) { b.checked = !allOn; });
+            submitSoon();
+        });
+    });
+
+    updateCounts();
+})();
+</script>

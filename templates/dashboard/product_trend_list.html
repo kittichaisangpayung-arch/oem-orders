@@ -78,101 +78,6 @@ button.period-btn {
     cursor: pointer;
     font-family: inherit;
 }
-.month-picker {
-    flex-basis: 100%;
-}
-.year-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-    border-bottom: 2px solid var(--cream-dark);
-}
-.year-tab {
-    padding: 6px 16px;
-    border: 0;
-    border-bottom: 3px solid transparent;
-    margin-bottom: -2px;
-    background: none;
-    color: var(--text-muted);
-    font-family: inherit;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-}
-.year-tab:hover {
-    color: var(--pink-dark);
-}
-.year-tab.active {
-    color: var(--pink-dark);
-    border-bottom-color: var(--pink);
-}
-.year-tab:focus-visible,
-.whole-year-btn:focus-visible {
-    outline: 3px solid var(--purple);
-    outline-offset: 2px;
-}
-.month-options {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-    gap: 8px;
-    border: 0;
-    margin: 0;
-    padding: 0;
-}
-.month-options[hidden] {
-    display: none;
-}
-.month-chip span {
-    text-align: center;
-    width: 100%;
-    box-sizing: border-box;
-}
-.month-chip input:disabled + span {
-    border-color: var(--cream-dark);
-    color: var(--text-muted);
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-.whole-year-btn {
-    grid-column: span 2;
-    padding: 6px 14px;
-    border: 2px dashed var(--purple);
-    border-radius: 20px;
-    background: #fff;
-    color: var(--purple);
-    font-family: inherit;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.month-filter.is-loading .month-picker {
-    opacity: 0.6;
-    pointer-events: none;
-}
-.month-chip input {
-    position: absolute;
-    opacity: 0;
-}
-.month-chip span {
-    display: inline-block;
-    padding: 6px 14px;
-    border: 2px solid var(--pink);
-    border-radius: 20px;
-    color: var(--pink-dark);
-    background: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.month-chip input:checked + span {
-    background: var(--pink);
-    color: #fff;
-}
-.month-chip input:focus-visible + span {
-    outline: 3px solid var(--purple);
-    outline-offset: 2px;
-}
 .month-breakdown {
     margin-top: 12px;
     font-size: 12px;
@@ -183,14 +88,6 @@ button.period-btn {
     justify-content: space-between;
     padding: 2px 0;
     border-bottom: 1px dashed var(--cream-dark);
-}
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
 }
 .product-grid {
     display: grid;
@@ -334,95 +231,11 @@ button.period-btn {
         </div>
         <div class="period-buttons">
             <a href="?" class="period-btn">เดือนนี้</a>
+            <a href="{% url 'dashboard:product_comparison' %}?{{ month_query }}" class="period-btn">📈 เปรียบเทียบสินค้า</a>
             <noscript><button type="submit" class="period-btn active">แสดงผล</button></noscript>
         </div>
-        <div class="month-picker">
-            <div class="year-tabs" role="group" aria-label="เลือกปี">
-                {% for group in year_groups %}
-                <button type="button" class="year-tab{% if group.year == active_year %} active{% endif %}"
-                        data-year="{{ group.year }}" aria-pressed="{% if group.year == active_year %}true{% else %}false{% endif %}">
-                    {{ group.label }}<span class="year-count" data-count-for="{{ group.year }}"></span>
-                </button>
-                {% endfor %}
-            </div>
-            {% for group in year_groups %}
-            <fieldset class="month-options" data-year="{{ group.year }}" {% if group.year != active_year %}hidden{% endif %}>
-                <legend class="visually-hidden">เลือกเดือนของปี {{ group.label }} (เลือกได้หลายเดือน)</legend>
-                {% for m in group.months %}
-                <label class="month-chip" title="{{ m.title }}">
-                    <input type="checkbox" name="month" value="{{ m.value }}"
-                           {% if m.selected %}checked{% endif %} {% if not m.enabled %}disabled{% endif %}>
-                    <span>{{ m.label }}</span>
-                </label>
-                {% endfor %}
-                <button type="button" class="whole-year-btn" data-year="{{ group.year }}">ทั้งปี {{ group.label }}</button>
-            </fieldset>
-            {% endfor %}
-        </div>
+        {% include "dashboard/_month_picker.html" %}
     </form>
-    <script>
-    (function () {
-        var form = document.querySelector('.month-filter');
-        var boxes = form.querySelectorAll('input[name="month"]');
-        var timer;
-
-        function checked() {
-            return form.querySelectorAll('input[name="month"]:checked');
-        }
-
-        function updateCounts() {
-            form.querySelectorAll('[data-count-for]').forEach(function (el) {
-                var n = form.querySelectorAll('fieldset[data-year="' + el.dataset.countFor + '"] input:checked').length;
-                el.textContent = n ? ' (' + n + ')' : '';
-            });
-        }
-
-        // Short delay so several quick clicks reload the page only once.
-        function submitSoon() {
-            updateCounts();
-            clearTimeout(timer);
-            timer = setTimeout(function () {
-                form.classList.add('is-loading');
-                form.submit();
-            }, 500);
-        }
-
-        boxes.forEach(function (box) {
-            box.addEventListener('change', function () {
-                if (!checked().length) {
-                    box.checked = true;  // keep at least one month selected
-                    return;
-                }
-                submitSoon();
-            });
-        });
-
-        form.querySelectorAll('.year-tab').forEach(function (tab) {
-            tab.addEventListener('click', function () {
-                form.querySelectorAll('.year-tab').forEach(function (t) {
-                    var on = t === tab;
-                    t.classList.toggle('active', on);
-                    t.setAttribute('aria-pressed', on ? 'true' : 'false');
-                });
-                form.querySelectorAll('fieldset.month-options').forEach(function (fs) {
-                    fs.hidden = fs.dataset.year !== tab.dataset.year;
-                });
-            });
-        });
-
-        form.querySelectorAll('.whole-year-btn').forEach(function (btn) {
-            btn.addEventListener('click', function () {
-                var yearBoxes = form.querySelectorAll('fieldset[data-year="' + btn.dataset.year + '"] input:not(:disabled)');
-                var allOn = Array.prototype.every.call(yearBoxes, function (b) { return b.checked; });
-                if (allOn && checked().length === yearBoxes.length) return;
-                yearBoxes.forEach(function (b) { b.checked = !allOn; });
-                submitSoon();
-            });
-        });
-
-        updateCounts();
-    })();
-    </script>
 
     <!-- Product Grid -->
     {% if product_stats %}

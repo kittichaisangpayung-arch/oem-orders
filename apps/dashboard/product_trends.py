@@ -18,6 +18,10 @@ THAI_MONTHS = [
     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ]
+# Line charts use an 8-slot categorical palette; more series stop being distinguishable.
+MAX_COMPARE_PRODUCTS = 8
+DEFAULT_COMPARE_MONTHS = 6
+
 THAI_MONTHS_SHORT = [
     'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
     'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
@@ -269,63 +273,79 @@ def product_trend_detail(request, product_id):
     return render(request, 'dashboard/product_trend_detail.html', context)
 
 
+def _selected_product_ids(request):
+    """Valid ?products=<id> values in the order given, de-duplicated, capped."""
+    ids = []
+    for value in request.GET.getlist('products'):
+        if value.isdigit() and int(value) not in ids:
+            ids.append(int(value))
+    return ids[:MAX_COMPARE_PRODUCTS]
+
+
 @allow_embedding
 def product_comparison(request):
-    """Compare trends of multiple products side by side."""
+    """Monthly trend of several products side by side (?products=<id>&month=YYYY-MM...)."""
 
-    # Get selected product IDs
-    product_ids = request.GET.getlist('products')
-    months = int(request.GET.get('months', 6))
+    data_months = {
+        d.strftime('%Y-%m') for d in PurchaseOrderBatch.objects.dates('uploaded_at', 'month')
+    }
+    selected_months = _selected_months(request) or (
+        sorted(data_months, reverse=True)[:DEFAULT_COMPARE_MONTHS]
+        or [timezone.localdate().strftime('%Y-%m')]
+    )
+    months_asc = sorted(selected_months)
+    metric = 'value' if request.GET.get('metric') == 'value' else 'qty'
 
-    if not product_ids:
-        # Show product selection form
-        products = Product.objects.filter(is_active=True).order_by('sort_rank', 'barcode')
-        context = {
-            'products': products,
-            'months': months,
-        }
-        return render(request, 'dashboard/product_comparison_form.html', context)
+    products = Product.objects.in_bulk(_selected_product_ids(request))
+    product_ids = [pid for pid in _selected_product_ids(request) if pid in products]
 
-    # Get comparison data
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=months*30)
+    by_product = {pid: {} for pid in product_ids}
+    if product_ids:
+        for key in months_asc:
+            start, end = _month_range(int(key[:4]), int(key[5:]))
+            rows = POLineItem.objects.filter(
+                product_id__in=product_ids,
+                purchase_order__batch__uploaded_at__gte=start,
+                purchase_order__batch__uploaded_at__lt=end,
+            ).values('product').annotate(qty=Sum('qty2'), value=Sum('line_total'))
+            for r in rows:
+                by_product[r['product']][key] = {'qty': r['qty'] or 0, 'value': r['value'] or 0}
 
-    products = Product.objects.filter(id__in=product_ids)
-    comparison_data = []
-
-    for product in products:
-        line_items = POLineItem.objects.filter(
-            product=product,
-            purchase_order__batch__uploaded_at__gte=start_date
-        )
-
-        monthly_data = defaultdict(int)
-        for item in line_items:
-            month_key = item.purchase_order.batch.uploaded_at.strftime('%Y-%m')
-            monthly_data[month_key] += item.qty2 or 0
-
-        total_qty = line_items.aggregate(total=Sum('qty2'))['total'] or 0
-        total_value = line_items.aggregate(total=Sum('line_total'))['total'] or 0
-
-        comparison_data.append({
-            'product': product,
-            'monthly_data': dict(monthly_data),
-            'total_qty': total_qty,
-            'total_value': total_value,
+    empty = {'qty': 0, 'value': 0}
+    series = []
+    for index, pid in enumerate(product_ids):
+        months = [by_product[pid].get(key, empty) for key in months_asc]
+        series.append({
+            'product': products[pid],
+            'slot': index + 1,
+            'points': months,
+            'chart_values': [float(m[metric]) for m in months],
+            'total_qty': sum(m['qty'] for m in months),
+            'total_value': sum(m['value'] for m in months),
         })
 
-    # Get all months for x-axis
-    all_months = set()
-    for data in comparison_data:
-        all_months.update(data['monthly_data'].keys())
-    all_months = sorted(all_months)
+    table_rows = [
+        {'label': _month_label(key), 'cells': [s['points'][i] for s in series]}
+        for i, key in enumerate(months_asc)
+    ]
 
     context = {
-        'comparison_data': comparison_data,
-        'all_months': all_months,
-        'months': months,
-        'start_date': start_date,
-        'end_date': end_date,
+        'series': series,
+        'table_rows': table_rows,
+        'metric': metric,
+        'selected_months': selected_months,
+        'selected_labels': [_month_label(m) for m in months_asc],
+        'chart_labels': [_month_label(m) for m in months_asc],
+        'chart_series': [
+            {'label': s['product'].description, 'slot': s['slot'], 'values': s['chart_values']}
+            for s in series
+        ],
+        'year_groups': _year_groups(data_months, selected_months),
+        'active_year': int(selected_months[0][:4]),
+        'month_query': urlencode([('month', m) for m in selected_months]),
+        'selected_product_ids': product_ids,
+        'all_products': Product.objects.filter(is_active=True).order_by('sort_rank', 'barcode'),
+        'max_products': MAX_COMPARE_PRODUCTS,
     }
 
     return render(request, 'dashboard/product_comparison.html', context)
