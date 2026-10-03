@@ -18,6 +18,10 @@ THAI_MONTHS = [
     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ]
+THAI_MONTHS_SHORT = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
+]
 
 
 def _month_range(year, month):
@@ -42,6 +46,32 @@ def _selected_months(request):
         except ValueError:
             continue
     return sorted(months, reverse=True)
+
+
+def _year_groups(data_months, selected_months):
+    """Month picker grouped by year (newest first), all 12 months per year.
+
+    Months without data are disabled unless already selected.
+    """
+    years = {int(m[:4]) for m in data_months | set(selected_months)}
+    return [
+        {
+            'year': year,
+            'label': year + 543,
+            'months': [
+                {
+                    'value': key,
+                    'label': THAI_MONTHS_SHORT[month - 1],
+                    'title': _month_label(key),
+                    'selected': key in selected_months,
+                    'enabled': key in data_months or key in selected_months,
+                }
+                for month in range(1, 13)
+                for key in [f'{year}-{month:02d}']
+            ],
+        }
+        for year in sorted(years, reverse=True)
+    ]
 
 
 @allow_embedding
@@ -91,16 +121,17 @@ def product_trend_list(request):
         })
     product_stats.sort(key=lambda x: x['total_qty'], reverse=True)
 
-    month_choices = {
+    data_months = {
         d.strftime('%Y-%m') for d in PurchaseOrderBatch.objects.dates('uploaded_at', 'month')
-    } | set(selected_months)
+    }
 
     context = {
         'product_stats': product_stats,
         'selected_months': selected_months,
         'selected_labels': [_month_label(m) for m in reversed(selected_months)],
         'month_query': urlencode([('month', m) for m in selected_months]),
-        'available_months': [(m, _month_label(m)) for m in sorted(month_choices, reverse=True)],
+        'year_groups': _year_groups(data_months, selected_months),
+        'active_year': int(selected_months[0][:4]),
         'grand_total_qty': sum(p['total_qty'] for p in product_stats),
         'grand_total_value': sum(p['total_value'] for p in product_stats),
     }
