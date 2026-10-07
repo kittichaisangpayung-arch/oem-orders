@@ -73,10 +73,7 @@
             </tr>
             <tr>
                 <td style="padding: 4px; border-right: 1px solid #000; border-top: 1px solid #000; text-align: left;">
-                    <strong>Address:</strong> {{ dn.store.customer.name }} (Head Office)<br>
-                    {% if dn.customer_head_office_address %}
-                    <span style="margin-left: 15px;">{{ dn.customer_head_office_address|linebreaksbr }}</span>
-                    {% endif %}
+                    <strong>Address:</strong> {{ dn.customer_head_office_address|linebreaksbr }}
                 </td>
                 <td style="padding: 4px; border-top: 1px solid #000; text-align: left;">
                     <strong>Date:</strong> {% if dn.delivery_date %}{{ dn.delivery_date|date:"Y/m/d" }}{% else %}{{ dn.created_at|date:"Y/m/d" }}{% endif %}
