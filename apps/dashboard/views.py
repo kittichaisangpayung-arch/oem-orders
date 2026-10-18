@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db.models import Sum, Count, Q
+from django.http import HttpResponse
 from django.shortcuts import redirect, render, get_object_or_404
 from django.urls import reverse
 
@@ -1464,7 +1465,131 @@ def create_delivery_notes_from_batch(request, batch_id):
 
             created_dns.append(dn)
 
-    return redirect("dashboard:delivery_note_list")
+    return redirect(f"{reverse('dashboard:delivery_note_list')}?batch={batch.pk}")
+
+
+# FlowAccount display names keyed by Customer.code (fallback: Customer.name).
+# Must match the customer name shown in the FlowAccount dropdown exactly.
+FLOWACCOUNT_CUSTOMER_NAMES = {
+    "DONKI": "DONKI (THAILAND) CO.,LTD",
+}
+
+# Body of the generated Playwright test (plain string - `${...}` is TypeScript).
+_FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพราะมีจุดหยุดรอผู้ใช้ (login / ตรวจสอบเอกสาร)
+
+  await page.goto('https://advance.flowaccount.com');
+
+  // หยุดให้ผู้ใช้ล็อกอินและเลือกบริษัทเอง โดยไม่เก็บรหัสผ่านไว้ในโค้ด
+  // เสร็จแล้วกด Resume (▶) ใน Playwright Inspector เพื่อทำงานต่อ
+  await page.pause();
+
+  for (const branch of BRANCHES) {
+    await page.locator('[data-test="ใบกำกับภาษี"]').click();
+    await page.locator('[data-test="create-new-button"]').click();
+
+    await page.getByRole('textbox', { name: 'เลือกลูกค้า หรือพิมพ์เพื่อสร้างใหม่' }).click();
+    await page.getByRole('textbox', { name: 'เลือกลูกค้า หรือพิมพ์เพื่อสร้างใหม่' }).fill(CUSTOMER_SEARCH);
+    await page.getByText(CUSTOMER_NAME).click();
+
+    for (let row = 0; row < branch.items.length; row++) {
+      const item = branch.items[row];
+
+      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
+        .getByRole('textbox', { name: 'ชื่อสินค้า' })
+        .click();
+      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
+        .getByText(`รหัสสินค้า: ${item.barcode}`)
+        .click();
+      await page.getByTestId(`quantity-input-table-row-${row}`).fill(item.qty);
+    }
+
+    await page.getByTestId('remarks-text-area').fill(branch.branchName);
+
+    // หยุดก่อนบันทึก เพื่อให้ตรวจสอบข้อมูลบนหน้าจอด้วยตนเอง
+    // กด Resume (▶) เพื่อบันทึกเอกสาร แล้วสคริปต์จะทำสาขาถัดไปต่อให้เอง
+    await page.pause();
+
+    await page.getByRole('button', { name: 'บันทึกเอกสาร' }).click();
+  }
+});
+"""
+
+
+def _ts_quote(value):
+    """Quote a value as a single-quoted TypeScript string literal."""
+    text = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    return f"'{text}'"
+
+
+@login_required
+def export_flowaccount_playwright(request, batch_id):
+    """Download one Playwright spec file that creates FlowAccount tax invoices
+    for every delivery note in the batch (one section per branch)."""
+    from apps.core.models import CustomerProduct
+
+    batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
+
+    delivery_notes = list(
+        DeliveryNote.objects.filter(batch=batch)
+        .select_related("store", "store__customer")
+        .prefetch_related("items__product")
+        .order_by("store__name")
+    )
+
+    if not delivery_notes:
+        return redirect(f"{reverse('dashboard:delivery_note_list')}?batch={batch.pk}")
+
+    customer = delivery_notes[0].store.customer
+    customer_name = FLOWACCOUNT_CUSTOMER_NAMES.get(customer.code, customer.name)
+    customer_search = customer_name[:2].lower()
+
+    # Customer-specific barcode overrides (same rule as DN creation)
+    customer_barcodes = {}
+    for cp in CustomerProduct.objects.filter(customer=customer).exclude(barcode_override=""):
+        customer_barcodes[cp.product_id] = cp.barcode_override
+
+    branch_blocks = []
+    for dn in delivery_notes:
+        item_lines = "\n".join(
+            f"      {{ barcode: {_ts_quote(customer_barcodes.get(item.product_id) or item.product.barcode)}, qty: {_ts_quote(item.quantity)} }},"
+            for item in dn.items.all()
+        )
+        branch_blocks.append(
+            "  {\n"
+            f"    branchName: {_ts_quote(dn.store.name)}, // {dn.dn_number}\n"
+            "    items: [\n"
+            f"{item_lines}\n"
+            "    ],\n"
+            "  },"
+        )
+
+    filename = f"flowaccount-batch-{batch.pk}.spec.ts"
+    title = f"สร้างใบกำกับภาษีจาก Delivery Notes - Batch #{batch.pk}"
+    created_str = datetime.now().strftime("%d/%m/%Y %H:%M")
+
+    script = (
+        "import { test } from '@playwright/test';\n"
+        "\n"
+        f"// สร้างอัตโนมัติจากระบบ PO Dashboard - Batch #{batch.pk} ({created_str})\n"
+        f"// รัน: npx playwright test {filename} --headed\n"
+        "// สคริปต์จะหยุดให้ล็อกอิน 1 ครั้ง และหยุดให้ตรวจสอบก่อนบันทึกเอกสารของแต่ละสาขา\n"
+        "\n"
+        "// ชื่อลูกค้าตามที่แสดงใน FlowAccount (แก้ไขได้ถ้าไม่ตรง)\n"
+        f"const CUSTOMER_SEARCH = {_ts_quote(customer_search)};\n"
+        f"const CUSTOMER_NAME = {_ts_quote(customer_name)};\n"
+        "\n"
+        "// ข้อมูลแต่ละสาขา: รายการสินค้า (barcode), จำนวน (qty) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
+        "const BRANCHES = [\n"
+        + "\n".join(branch_blocks)
+        + "\n];\n"
+        "\n"
+        f"test({_ts_quote(title)}, async ({{ page }}) => {{\n"
+        + _FLOWACCOUNT_TEST_BODY
+    )
+
+    response = HttpResponse(script, content_type="application/octet-stream")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

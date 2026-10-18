@@ -21,6 +21,7 @@ urlpatterns = [
     path("shipping/", views.shipping_summary, name="shipping_summary"),
     path("delivery-notes/", views.delivery_note_list, name="delivery_note_list"),
     path("delivery-notes/create/<int:batch_id>/", views.create_delivery_notes_from_batch, name="create_delivery_notes"),
+    path("delivery-notes/export-playwright/<int:batch_id>/", views.export_flowaccount_playwright, name="export_flowaccount_playwright"),
     path("delivery-notes/<int:dn_id>/", views.delivery_note_detail, name="delivery_note_detail"),
     path("delivery-notes/<int:dn_id>/confirm/", views.confirm_delivery_note, name="confirm_delivery_note"),
     path("delivery-notes/<int:dn_id>/mark-delivered/", views.mark_delivered, name="mark_delivered"),

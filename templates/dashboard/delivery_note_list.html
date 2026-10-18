@@ -56,6 +56,13 @@
             <div style="display: flex; gap: 5px;">
                 <button type="submit" style="padding: 8px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">ค้นหา</button>
                 <a href="{% url 'dashboard:delivery_note_list' %}" style="padding: 8px 20px; background: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">ล้าง</a>
+                {% if batch_filter %}
+                    <a href="{% url 'dashboard:export_flowaccount_playwright' batch_filter %}"
+                       title="ดาวน์โหลดสคริปต์ Playwright สำหรับสร้างใบกำกับภาษีใน FlowAccount (ทุกสาขาใน Batch นี้ รวมไฟล์เดียว)"
+                       style="padding: 8px 20px; background: #17a2b8; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">
+                        ⬇ สคริปต์ FlowAccount
+                    </a>
+                {% endif %}
             </div>
         </div>
     </form>
