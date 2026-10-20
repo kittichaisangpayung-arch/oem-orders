@@ -1487,20 +1487,24 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
     await page.locator('[data-test="ใบกำกับภาษี"]').click();
     await page.locator('[data-test="create-new-button"]').click();
 
-    await page.getByRole('textbox', { name: 'เลือกลูกค้า หรือพิมพ์เพื่อสร้างใหม่' }).click();
-    await page.getByRole('textbox', { name: 'เลือกลูกค้า หรือพิมพ์เพื่อสร้างใหม่' }).fill(CUSTOMER_SEARCH);
-    await page.getByText(CUSTOMER_NAME).click();
+    const customerSearch = page.getByRole('textbox', { name: 'เลือกลูกค้า หรือพิมพ์เพื่อสร้างใหม่' });
+    await customerSearch.waitFor({ state: 'visible' });
+    await customerSearch.fill(CUSTOMER_SEARCH);
+    await page.locator('.tt-item.tt-suggestion.tt-selectable')
+      .filter({ hasText: CUSTOMER_NAME })
+      .first()
+      .click();
 
     for (let row = 0; row < branch.items.length; row++) {
       const item = branch.items[row];
 
-      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
-        .getByRole('textbox', { name: 'ชื่อสินค้า' })
-        .click();
-      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
-        .getByText(`รหัสสินค้า: ${item.barcode}`)
-        .click();
+      if (row >= 3) {
+        await page.getByTestId('add-line-item-button').click();
+      }
+
+      await page.getByTestId(`description-input-table-row-${row}`).fill(item.name);
       await page.getByTestId(`quantity-input-table-row-${row}`).fill(item.qty);
+      await page.getByTestId(`unit-price-input-table-row-${row}`).fill(item.price);
     }
 
     await page.getByTestId('remarks-text-area').fill(branch.branchName);
@@ -1510,6 +1514,8 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
     await page.pause();
 
     await page.getByRole('button', { name: 'บันทึกเอกสาร' }).click();
+    await page.getByRole('button', { name: 'ปิดหน้าต่าง' }).click();
+    await page.locator('[data-test="create-new-button"]').waitFor({ state: 'visible', timeout: 30000 });
   }
 });
 """
@@ -1521,12 +1527,15 @@ def _ts_quote(value):
     return f"'{text}'"
 
 
+def _ts_price(value):
+    """Format a Decimal price compactly for the script ('50', '12.5')."""
+    return f"{value:.2f}".rstrip("0").rstrip(".")
+
+
 @login_required
 def export_flowaccount_playwright(request, batch_id):
     """Download one Playwright spec file that creates FlowAccount tax invoices
     for every delivery note in the batch (one section per branch)."""
-    from apps.core.models import CustomerProduct
-
     batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
 
     delivery_notes = list(
@@ -1541,17 +1550,12 @@ def export_flowaccount_playwright(request, batch_id):
 
     customer = delivery_notes[0].store.customer
     customer_name = FLOWACCOUNT_CUSTOMER_NAMES.get(customer.code, customer.name)
-    customer_search = customer_name[:2].lower()
-
-    # Customer-specific barcode overrides (same rule as DN creation)
-    customer_barcodes = {}
-    for cp in CustomerProduct.objects.filter(customer=customer).exclude(barcode_override=""):
-        customer_barcodes[cp.product_id] = cp.barcode_override
+    customer_search = customer_name[:3].lower()
 
     branch_blocks = []
     for dn in delivery_notes:
         item_lines = "\n".join(
-            f"      {{ barcode: {_ts_quote(customer_barcodes.get(item.product_id) or item.product.barcode)}, qty: {_ts_quote(item.quantity)} }},"
+            f"      {{ name: {_ts_quote(item.product.description)}, qty: {_ts_quote(item.quantity)}, price: {_ts_quote(_ts_price(item.unit_price))} }},"
             for item in dn.items.all()
         )
         branch_blocks.append(
@@ -1578,7 +1582,7 @@ def export_flowaccount_playwright(request, batch_id):
         f"const CUSTOMER_SEARCH = {_ts_quote(customer_search)};\n"
         f"const CUSTOMER_NAME = {_ts_quote(customer_name)};\n"
         "\n"
-        "// ข้อมูลแต่ละสาขา: รายการสินค้า (barcode), จำนวน (qty) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
+        "// ข้อมูลแต่ละสาขา: ชื่อสินค้า (name), จำนวน (qty), ราคาต่อหน่วย (price) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
         "const BRANCHES = [\n"
         + "\n".join(branch_blocks)
         + "\n];\n"
