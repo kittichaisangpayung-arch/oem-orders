@@ -1416,12 +1416,14 @@ def create_delivery_notes_from_batch(request, batch_id):
                     continue  # Skip this product - store didn't order it
 
             # Store ordered this product (qty > 0)
+            remark = ""
             overridden = (pid, store_id) in overrides
             if overridden:
                 display_qty = overrides[(pid, store_id)]
             elif minimum > 0 and qty < minimum:
                 # Apply minimum only if store actually ordered
                 display_qty = minimum
+                remark = f"ปรับขั้นต่ำ (สั่ง {qty})"
             else:
                 display_qty = qty
 
@@ -1434,6 +1436,7 @@ def create_delivery_notes_from_batch(request, batch_id):
                     "quantity": display_qty,
                     "unit_price": unit_price,
                     "amount": amount,
+                    "remark": remark,
                 })
 
         # Create delivery note if store has items
@@ -1482,6 +1485,7 @@ def create_delivery_notes_from_batch(request, batch_id):
                     unit_price=item["unit_price"],
                     amount=item["amount"],
                     line_no=idx,
+                    remark=item["remark"],
                 )
 
             created_dns.append(dn)

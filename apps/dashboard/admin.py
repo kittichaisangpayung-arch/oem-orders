@@ -6,7 +6,7 @@ from .models import DeliveryNote, DeliveryNoteItem, StoreProductOverride
 class DeliveryNoteItemInline(admin.TabularInline):
     model = DeliveryNoteItem
     extra = 0
-    readonly_fields = ["product", "quantity", "claimed_quantity", "unit_price", "amount", "line_no"]
+    readonly_fields = ["product", "quantity", "claimed_quantity", "unit_price", "amount", "line_no", "remark"]
     can_delete = False
 
 

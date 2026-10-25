@@ -46,3 +46,39 @@ def test_delivery_note_and_flowaccount_follow_po_line_order():
     script = response.content.decode()
     positions = [script.index(f"'Product {name}'") for name in ("C", "A", "B")]
     assert positions == sorted(positions)
+
+
+@pytest.mark.django_db
+def test_delivery_note_remarks_min_order_adjustment():
+    user = User.objects.create_user(username="dn-remark", password="testpass123")
+    customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
+    store = Store.objects.create(customer=customer, store_code="S1", name="Store One")
+
+    bumped = Product.objects.create(barcode="2000000000001", description="Bumped", min_order_qty=10)
+    normal = Product.objects.create(barcode="2000000000002", description="Normal", min_order_qty=10)
+
+    batch = PurchaseOrderBatch.objects.create(customer=customer)
+    po = PurchaseOrder.objects.create(
+        batch=batch, customer=customer, store=store,
+        store_code_raw=store.store_code, store_name_raw=store.name, source_filename="po.pdf",
+    )
+    for line_no, (product, qty) in enumerate([(bumped, 3), (normal, 12)], start=1):
+        POLineItem.objects.create(
+            purchase_order=po, product=product, barcode_raw=product.barcode,
+            description_raw=product.description, qty=qty, qty2=qty,
+            unit_amount=1, line_total=qty, line_no=line_no,
+        )
+
+    client = Client()
+    client.force_login(user)
+    client.post(reverse("dashboard:create_delivery_notes", args=[batch.pk]))
+
+    dn = DeliveryNote.objects.get(batch=batch, store=store)
+    items = {item.product.description: item for item in dn.items.all()}
+    assert items["Bumped"].quantity == 10
+    assert items["Bumped"].remark == "ปรับขั้นต่ำ (สั่ง 3)"
+    assert items["Normal"].quantity == 12
+    assert items["Normal"].remark == ""
+
+    response = client.get(reverse("dashboard:delivery_note_detail", args=[dn.pk]))
+    assert "ปรับขั้นต่ำ (สั่ง 3)" in response.content.decode()

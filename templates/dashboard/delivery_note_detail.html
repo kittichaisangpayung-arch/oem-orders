@@ -176,6 +176,9 @@
                         {% if item.claimed_quantity > 0 %}
                             <span style="color: #d9534f; font-weight: bold;">เคลม: {{ item.claimed_quantity|intcomma }}</span>
                         {% endif %}
+                        {% if item.remark %}
+                            <div>{{ item.remark }}</div>
+                        {% endif %}
                     </td>
                 </tr>
             {% endfor %}

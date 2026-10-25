@@ -122,6 +122,8 @@ class DeliveryNoteItem(models.Model):
 
     line_no = models.PositiveIntegerField(default=0)
 
+    remark = models.CharField(max_length=200, blank=True)
+
     class Meta:
         ordering = ["line_no", "product__sort_rank", "product__barcode"]
 
