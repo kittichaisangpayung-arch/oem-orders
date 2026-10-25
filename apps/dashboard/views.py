@@ -1348,6 +1348,18 @@ def create_delivery_notes_from_batch(request, batch_id):
         products, key=lambda pid: (products[pid]["sort_rank"] is None, products[pid]["sort_rank"] or 0, products[pid]["barcode"])
     )
 
+    # First position (PO, line) of each product in each store's POs, so DN
+    # lines follow the order printed on the customer's PO.
+    po_position = {}
+    for pid, sid, po_id, line_no in qs.filter(product__isnull=False).values_list(
+        "product_id", "purchase_order__store_id", "purchase_order_id", "line_no"
+    ):
+        key = (pid, sid)
+        pos = (po_id, line_no)
+        if key not in po_position or pos < po_position[key]:
+            po_position[key] = pos
+    fallback_rank = {pid: idx for idx, pid in enumerate(sorted_product_ids)}
+
     # If GET request, show form to select delivery dates
     if request.method != "POST":
         from datetime import date
@@ -1379,7 +1391,16 @@ def create_delivery_notes_from_batch(request, batch_id):
         store_items = []
         subtotal = Decimal('0')
 
-        for pid in sorted_product_ids:
+        store_product_ids = sorted(
+            sorted_product_ids,
+            key=lambda pid: (
+                (pid, store_id) not in po_position,
+                po_position.get((pid, store_id), (0, 0)),
+                fallback_rank[pid],
+            ),
+        )
+
+        for pid in store_product_ids:
             p = products[pid]
             qty = matrix[pid].get(store_id, 0)
             minimum = p["min_order_qty"]
