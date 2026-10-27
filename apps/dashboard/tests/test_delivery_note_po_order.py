@@ -12,7 +12,9 @@ from apps.ingestion.models import POLineItem, PurchaseOrder, PurchaseOrderBatch
 def test_delivery_note_and_flowaccount_follow_po_line_order():
     user = User.objects.create_user(username="dn-order", password="testpass123")
     customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
-    store = Store.objects.create(customer=customer, store_code="S1", name="Store One")
+    store = Store.objects.create(
+        customer=customer, store_code="S1", name="Store One", address="1 Main Rd\r\nBangkok 10110",
+    )
 
     # sort_rank order (A, B, C) deliberately differs from the PO order (C, A, B).
     product_a = Product.objects.create(barcode="1000000000001", description="Product A", sort_rank=1)
@@ -46,6 +48,7 @@ def test_delivery_note_and_flowaccount_follow_po_line_order():
     script = response.content.decode()
     positions = [script.index(f"'{p.barcode}'") for p in (product_c, product_a, product_b)]
     assert positions == sorted(positions)
+    assert "branchAddress: '1 Main Rd\\nBangkok 10110'," in script
 
 
 @pytest.mark.django_db

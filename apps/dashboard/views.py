@@ -1527,7 +1527,9 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
         await page.getByTestId('add-line-item-button').click();
       }
 
-      await page.getByTestId(`description-input-table-row-${row}`).fill(item.barcode);
+      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
+        .getByRole('textbox', { name: 'ชื่อสินค้า' })
+        .fill(item.barcode);
       await page.getByTestId(`product-dropdown-input-table-row-${row}`)
         .getByText(`รหัสสินค้า: ${item.barcode}`)
         .click();
@@ -1535,7 +1537,8 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
       await page.getByTestId(`unit-price-input-table-row-${row}`).fill(item.price);
     }
 
-    await page.getByTestId('remarks-text-area').fill(branch.branchName);
+    await page.getByTestId('remarks-text-area')
+      .fill([branch.branchName, branch.branchAddress].filter(Boolean).join('\\n'));
 
     // หยุดก่อนบันทึก เพื่อให้ตรวจสอบข้อมูลบนหน้าจอด้วยตนเอง
     // กด Resume (▶) เพื่อบันทึกเอกสาร แล้วสคริปต์จะทำสาขาถัดไปต่อให้เอง
@@ -1551,7 +1554,10 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
 
 def _ts_quote(value):
     """Quote a value as a single-quoted TypeScript string literal."""
-    text = str(value).replace("\\", "\\\\").replace("'", "\\'")
+    text = (
+        str(value).replace("\\", "\\\\").replace("'", "\\'")
+        .replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\\n")
+    )
     return f"'{text}'"
 
 
@@ -1596,6 +1602,7 @@ def export_flowaccount_playwright(request, batch_id):
         branch_blocks.append(
             "  {\n"
             f"    branchName: {_ts_quote(dn.store.name)}, // {dn.dn_number}\n"
+            f"    branchAddress: {_ts_quote(dn.store.address.strip())},\n"
             "    items: [\n"
             f"{item_lines}\n"
             "    ],\n"
@@ -1617,7 +1624,7 @@ def export_flowaccount_playwright(request, batch_id):
         f"const CUSTOMER_SEARCH = {_ts_quote(customer_search)};\n"
         f"const CUSTOMER_NAME = {_ts_quote(customer_name)};\n"
         "\n"
-        "// ข้อมูลแต่ละสาขา: บาร์โค้ดสินค้า (barcode), จำนวน (qty), ราคาต่อหน่วย (price) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
+        "// ข้อมูลแต่ละสาขา: บาร์โค้ดสินค้า (barcode), จำนวน (qty), ราคาต่อหน่วย (price) และชื่อ/ที่อยู่สาขา (branchName + branchAddress ใส่ในหมายเหตุ)\n"
         "const BRANCHES = [\n"
         + "\n".join(branch_blocks)
         + "\n];\n"
