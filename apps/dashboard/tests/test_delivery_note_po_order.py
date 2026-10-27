@@ -44,7 +44,7 @@ def test_delivery_note_and_flowaccount_follow_po_line_order():
 
     response = client.get(reverse("dashboard:export_flowaccount_playwright", args=[batch.pk]))
     script = response.content.decode()
-    positions = [script.index(f"'Product {name}'") for name in ("C", "A", "B")]
+    positions = [script.index(f"'{p.barcode}'") for p in (product_c, product_a, product_b)]
     assert positions == sorted(positions)
 
 

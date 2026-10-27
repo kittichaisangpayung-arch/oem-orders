@@ -1527,7 +1527,7 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
         await page.getByTestId('add-line-item-button').click();
       }
 
-      await page.getByTestId(`description-input-table-row-${row}`).fill(item.name);
+      await page.getByTestId(`description-input-table-row-${row}`).fill(item.barcode);
       await page.getByTestId(`quantity-input-table-row-${row}`).fill(item.qty);
       await page.getByTestId(`unit-price-input-table-row-${row}`).fill(item.price);
     }
@@ -1561,6 +1561,8 @@ def _ts_price(value):
 def export_flowaccount_playwright(request, batch_id):
     """Download one Playwright spec file that creates FlowAccount tax invoices
     for every delivery note in the batch (one section per branch)."""
+    from apps.core.models import CustomerProduct
+
     batch = get_object_or_404(PurchaseOrderBatch, pk=batch_id)
 
     delivery_notes = list(
@@ -1577,10 +1579,15 @@ def export_flowaccount_playwright(request, batch_id):
     customer_name = FLOWACCOUNT_CUSTOMER_NAMES.get(customer.code, customer.name)
     customer_search = customer_name[:3].lower()
 
+    # Customer-specific barcode overrides (same rule as DN creation)
+    customer_barcodes = {}
+    for cp in CustomerProduct.objects.filter(customer=customer).exclude(barcode_override=""):
+        customer_barcodes[cp.product_id] = cp.barcode_override
+
     branch_blocks = []
     for dn in delivery_notes:
         item_lines = "\n".join(
-            f"      {{ name: {_ts_quote(item.product.description)}, qty: {_ts_quote(item.quantity)}, price: {_ts_quote(_ts_price(item.unit_price))} }},"
+            f"      {{ barcode: {_ts_quote(customer_barcodes.get(item.product_id) or item.product.barcode)}, qty: {_ts_quote(item.quantity)}, price: {_ts_quote(_ts_price(item.unit_price))} }},"
             for item in dn.items.all()
         )
         branch_blocks.append(
@@ -1607,7 +1614,7 @@ def export_flowaccount_playwright(request, batch_id):
         f"const CUSTOMER_SEARCH = {_ts_quote(customer_search)};\n"
         f"const CUSTOMER_NAME = {_ts_quote(customer_name)};\n"
         "\n"
-        "// ข้อมูลแต่ละสาขา: ชื่อสินค้า (name), จำนวน (qty), ราคาต่อหน่วย (price) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
+        "// ข้อมูลแต่ละสาขา: บาร์โค้ดสินค้า (barcode), จำนวน (qty), ราคาต่อหน่วย (price) และชื่อสาขา (branchName ใส่ในหมายเหตุ)\n"
         "const BRANCHES = [\n"
         + "\n".join(branch_blocks)
         + "\n];\n"
