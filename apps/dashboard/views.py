@@ -1528,6 +1528,9 @@ _FLOWACCOUNT_TEST_BODY = """  test.setTimeout(0); // ปิด timeout เพร
       }
 
       await page.getByTestId(`description-input-table-row-${row}`).fill(item.barcode);
+      await page.getByTestId(`product-dropdown-input-table-row-${row}`)
+        .getByText(`รหัสสินค้า: ${item.barcode}`)
+        .click();
       await page.getByTestId(`quantity-input-table-row-${row}`).fill(item.qty);
       await page.getByTestId(`unit-price-input-table-row-${row}`).fill(item.price);
     }
