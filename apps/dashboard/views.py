@@ -1937,7 +1937,7 @@ def create_invoice(request):
             description=description,
             quantity=total_qty,
             unit="PCS",
-            amount=dn.grand_total,
+            amount=dn.subtotal,
             line_no=line_no,
         )
 
@@ -1972,8 +1972,10 @@ def invoice_detail(request, invoice_id):
     # Get company profile
     company = CompanyProfile.get_active()
 
+    line_items = list(invoice.line_items.all())
+
     # Calculate total quantity
-    total_quantity = sum(item.quantity for item in invoice.line_items.all())
+    total_quantity = sum(item.quantity for item in line_items)
 
     context = {
         "invoice": invoice,
@@ -1984,6 +1986,12 @@ def invoice_detail(request, invoice_id):
     # Select template based on invoice type
     if invoice.invoice_type == Invoice.InvoiceType.BILLING_STATEMENT:
         template = "dashboard/billing_statement_detail.html"
+        # Paginate items - 10 per page
+        items_per_page = 10
+        context["pages"] = [
+            line_items[i:i + items_per_page]
+            for i in range(0, len(line_items), items_per_page)
+        ] or [[]]
     else:
         template = "dashboard/invoice_detail.html"
 
@@ -2002,12 +2010,39 @@ def edit_invoice(request, invoice_id):
     )
 
     if request.method == "POST":
+        from django.contrib import messages
+        from django.db import transaction
+        from decimal import InvalidOperation
+
+        # Parse manually added rows before saving anything
+        new_rows = []
+        new_fields = zip(
+            request.POST.getlist("new_invoice_no"),
+            request.POST.getlist("new_quantity"),
+            request.POST.getlist("new_unit"),
+            request.POST.getlist("new_amount"),
+        )
+        for doc_no, qty, unit, amount in new_fields:
+            doc_no, qty, unit, amount = doc_no.strip(), qty.strip(), unit.strip(), amount.strip()
+            if not (doc_no or qty or amount):
+                continue
+            try:
+                quantity = int(qty or 0)
+                amount_value = Decimal(amount.replace(",", "") or "0")
+            except (ValueError, InvalidOperation):
+                messages.error(request, f"จำนวนหรือยอดเงินของรายการใหม่ไม่ถูกต้อง: {doc_no or '-'}")
+                return redirect("dashboard:edit_invoice", invoice_id=invoice.id)
+            new_rows.append((doc_no, quantity, unit or "PCS", amount_value))
+
+        delete_ids = {
+            int(pk) for pk in request.POST.getlist("delete_item") if pk.isdigit()
+        }
+
         # Update invoice number
         new_invoice_number = request.POST.get("invoice_number", "").strip()
         if new_invoice_number and new_invoice_number != invoice.invoice_number:
             # Check if new number already exists
             if Invoice.objects.filter(invoice_number=new_invoice_number).exclude(pk=invoice.pk).exists():
-                from django.contrib import messages
                 messages.error(request, f"เลขที่ Invoice {new_invoice_number} มีอยู่แล้ว")
             else:
                 invoice.invoice_number = new_invoice_number
@@ -2019,20 +2054,52 @@ def edit_invoice(request, invoice_id):
             invoice.po_numbers = new_po_numbers
             invoice.save(update_fields=["po_numbers"])
 
-        # Update line item external invoice numbers
-        for line_item in invoice.line_items.all():
-            invoice_no_key = f"invoice_no_{line_item.id}"
-            new_invoice_no = request.POST.get(invoice_no_key, "").strip()
-            if new_invoice_no != line_item.external_invoice_number:
-                line_item.external_invoice_number = new_invoice_no
-                line_item.save(update_fields=["external_invoice_number"])
-
-        # Update default description for all line items
         default_description = request.POST.get("default_description", "").strip()
-        if default_description:
+
+        with transaction.atomic():
+            # Update line item external invoice numbers
             for line_item in invoice.line_items.all():
-                line_item.description = default_description
-                line_item.save(update_fields=["description"])
+                if line_item.id in delete_ids:
+                    continue
+                invoice_no_key = f"invoice_no_{line_item.id}"
+                new_invoice_no = request.POST.get(invoice_no_key, "").strip()
+                if new_invoice_no != line_item.external_invoice_number:
+                    line_item.external_invoice_number = new_invoice_no
+                    line_item.save(update_fields=["external_invoice_number"])
+
+            if delete_ids or new_rows:
+                invoice.line_items.filter(id__in=delete_ids).delete()
+                last_line_no = max(
+                    (item.line_no for item in invoice.line_items.all() if item.id not in delete_ids),
+                    default=0,
+                )
+                for offset, (doc_no, quantity, unit, amount_value) in enumerate(new_rows, 1):
+                    InvoiceLineItem.objects.create(
+                        line_no=last_line_no + offset,
+                        invoice=invoice,
+                        delivery_note=None,
+                        external_invoice_number=doc_no,
+                        description=default_description,
+                        quantity=quantity,
+                        unit=unit,
+                        amount=amount_value,
+                    )
+
+                remaining = list(invoice.line_items.order_by("line_no", "id"))
+                for line_no, line_item in enumerate(remaining, 1):
+                    if line_item.line_no != line_no:
+                        line_item.line_no = line_no
+                        line_item.save(update_fields=["line_no"])
+
+                subtotal = sum((item.amount for item in remaining), Decimal("0"))
+                invoice.subtotal = subtotal
+                invoice.vat_amount = subtotal * (invoice.vat_rate / Decimal("100"))
+                invoice.grand_total = invoice.subtotal + invoice.vat_amount
+                invoice.save(update_fields=["subtotal", "vat_amount", "grand_total"])
+
+            # Update default description for all line items
+            if default_description:
+                invoice.line_items.update(description=default_description)
 
         return redirect("dashboard:invoice_detail", invoice_id=invoice.id)
 

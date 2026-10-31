@@ -46,9 +46,10 @@
                         <th style="padding: 12px; text-align: left;">เลขที่ Invoice (จากระบบอื่น)</th>
                         <th style="padding: 12px; text-align: center; width: 100px;">จำนวน</th>
                         <th style="padding: 12px; text-align: right; width: 120px;">ยอดเงิน</th>
+                        <th style="padding: 12px; text-align: center; width: 70px;">ลบ</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="line-items-body">
                     {% for item in invoice.line_items.all %}
                     <tr style="border-bottom: 1px solid #dee2e6;">
                         <td style="padding: 12px;">
@@ -66,11 +67,48 @@
                         <td style="padding: 12px; text-align: right; font-weight: bold;">
                             {{ item.amount|floatformat:2 }}
                         </td>
+                        <td style="padding: 12px; text-align: center;">
+                            <input type="checkbox" name="delete_item" value="{{ item.id }}"
+                                   onchange="this.closest('tr').style.opacity = this.checked ? '0.4' : '1'">
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
+            <button type="button" onclick="addLineItem()"
+                    style="margin-top: 12px; background: #007bff; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                + เพิ่มรายการ
+            </button>
         </div>
+
+        <template id="new-line-item-template">
+            <tr style="border-bottom: 1px solid #dee2e6; background: #f8fff8;">
+                <td style="padding: 12px;">ใหม่</td>
+                <td style="padding: 12px;">
+                    <input type="text" name="new_invoice_no" placeholder="เลขที่เอกสาร"
+                           style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: monospace;">
+                    <input type="hidden" name="new_unit" value="PCS">
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <input type="number" name="new_quantity" min="0" step="1" placeholder="0"
+                           style="width: 80px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                </td>
+                <td style="padding: 12px; text-align: right;">
+                    <input type="number" name="new_amount" step="0.01" placeholder="0.00"
+                           style="width: 110px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; text-align: right;">
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <button type="button" onclick="this.closest('tr').remove()"
+                            style="background: #dc3545; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer;">✕</button>
+                </td>
+            </tr>
+        </template>
+        <script>
+        function addLineItem() {
+            const template = document.getElementById("new-line-item-template");
+            document.getElementById("line-items-body").appendChild(template.content.cloneNode(true));
+        }
+        </script>
 
         <!-- Info Box -->
         <div style="margin-bottom: 20px; padding: 15px; background: #e7f3ff; border-left: 4px solid #007bff; border-radius: 4px;">
@@ -79,7 +117,8 @@
                 <li><strong>เลขที่เอกสารรวม:</strong> เลขที่ใบรวบรวม Invoice ทั้งหมด</li>
                 <li><strong>รายการสินค้า (ค่าเริ่มต้น):</strong> จะใช้ร่วมกันทุกบรรทัด</li>
                 <li><strong>เลขที่ Invoice:</strong> เลข Invoice จริงจากระบบอื่น (แทนที่เลข DN)</li>
-                <li>จำนวนและยอดเงินจะไม่เปลี่ยนแปลง (ดึงจาก Delivery Note)</li>
+                <li>จำนวนและยอดเงินของรายการเดิมจะไม่เปลี่ยนแปลง (ดึงจาก Delivery Note)</li>
+                <li><strong>เพิ่มรายการ / ลบ:</strong> ยอดเงินให้ใส่แบบยังไม่รวม VAT ระบบจะคำนวณ Subtotal, VAT และยอดรวมใหม่เมื่อกดบันทึก</li>
             </ul>
         </div>
 
