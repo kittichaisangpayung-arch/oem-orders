@@ -1490,6 +1490,8 @@ def create_delivery_notes_from_batch(request, batch_id):
 
             created_dns.append(dn)
 
+    _sync_billing_statements_for_delivery_notes(created_dns)
+
     return redirect(f"{reverse('dashboard:delivery_note_list')}?batch={batch.pk}")
 
 
@@ -1875,26 +1877,15 @@ def create_invoice(request):
         invoice_type=Invoice.InvoiceType.BILLING_STATEMENT
     ).first()
 
+    from django.contrib import messages
+
     if existing:
+        added = _sync_billing_statement(existing)
+        if added:
+            messages.success(request, f"เพิ่ม Delivery Note ใหม่ {added} รายการเข้าใบวางบิล {existing.invoice_number}")
         return redirect("dashboard:invoice_detail", invoice_id=existing.id)
 
-    # Get all delivery notes for this customer and month (any status)
-    from datetime import date
-    start_date = date(year, month, 1)
-    if month == 12:
-        end_date = date(year + 1, 1, 1)
-    else:
-        end_date = date(year, month + 1, 1)
-
-    delivery_notes = DeliveryNote.objects.filter(
-        store__customer=customer,
-        created_at__gte=start_date,
-        created_at__lt=end_date
-    ).prefetch_related("items__product").order_by("created_at")
-
-    if not delivery_notes.exists():
-        # No delivery notes found - redirect back with message
-        from django.contrib import messages
+    if not _billing_month_delivery_notes(customer, year, month).exists():
         messages.warning(request, f"ไม่พบ Delivery Notes สำหรับ {customer.name} ในเดือน {month}/{year}")
         return redirect("dashboard:create_invoice")
 
@@ -1911,50 +1902,87 @@ def create_invoice(request):
         created_by=request.user,
         invoice_type=Invoice.InvoiceType.BILLING_STATEMENT,
     )
+    _sync_billing_statement(invoice)
 
-    # Create line items from delivery notes
-    subtotal = Decimal('0')
-    line_no = 1
+    return redirect("dashboard:invoice_detail", invoice_id=invoice.id)
 
-    for dn in delivery_notes:
-        # Get product groups from DN items
+
+def _billing_month_delivery_notes(customer, year, month):
+    from datetime import date
+
+    start_date = date(year, month, 1)
+    end_date = date(year + 1, 1, 1) if month == 12 else date(year, month + 1, 1)
+    return DeliveryNote.objects.filter(
+        store__customer=customer,
+        created_at__gte=start_date,
+        created_at__lt=end_date,
+    )
+
+
+def _sync_billing_statement(invoice):
+    """Append the month's delivery notes that are not yet on the billing statement.
+
+    Existing lines (including manual ones and their edits) are left untouched.
+    Returns the number of lines added.
+    """
+    from decimal import Decimal
+    from .models import Invoice, InvoiceLineItem
+
+    if invoice.status in (Invoice.Status.PAID, Invoice.Status.CANCELLED):
+        return 0
+
+    linked_dn_ids = set(
+        invoice.line_items.exclude(delivery_note=None).values_list("delivery_note_id", flat=True)
+    )
+    new_dns = (
+        _billing_month_delivery_notes(invoice.customer, invoice.invoice_year, invoice.invoice_month)
+        .exclude(pk__in=linked_dn_ids)
+        .prefetch_related("items__product")
+        .order_by("created_at", "id")
+    )
+
+    last_line_no = max(invoice.line_items.values_list("line_no", flat=True), default=0)
+    added = 0
+    for dn in new_dns:
         items = dn.items.all()
-        product_groups = set()
-        total_qty = 0
-
-        for item in items:
-            if item.product.product_group:
-                product_groups.add(item.product.product_group)
-            total_qty += item.quantity
-
-        # Create description from product groups
-        description = " & ".join(sorted(product_groups)) if product_groups else "สินค้าทั่วไป"
-
-        # Create invoice line item
+        product_groups = {item.product.product_group for item in items if item.product.product_group}
+        added += 1
         InvoiceLineItem.objects.create(
             invoice=invoice,
             delivery_note=dn,
-            description=description,
-            quantity=total_qty,
+            description=" & ".join(sorted(product_groups)) if product_groups else "สินค้าทั่วไป",
+            quantity=sum(item.quantity for item in items),
             unit="PCS",
             amount=dn.subtotal,
-            line_no=line_no,
+            line_no=last_line_no + added,
         )
 
-        subtotal += dn.subtotal
-        line_no += 1
+    if added:
+        subtotal = sum(invoice.line_items.values_list("amount", flat=True), Decimal("0"))
+        invoice.subtotal = subtotal
+        invoice.vat_amount = subtotal * (Decimal(invoice.vat_rate) / Decimal("100"))
+        invoice.grand_total = subtotal + invoice.vat_amount
+        invoice.save(update_fields=["subtotal", "vat_amount", "grand_total"])
+    return added
 
-    # Calculate totals
-    vat_rate = Decimal('7.00')
-    vat_amount = subtotal * (vat_rate / Decimal('100'))
-    grand_total = subtotal + vat_amount
 
-    invoice.subtotal = subtotal
-    invoice.vat_amount = vat_amount
-    invoice.grand_total = grand_total
-    invoice.save()
+def _sync_billing_statements_for_delivery_notes(delivery_notes):
+    from .models import Invoice
 
-    return redirect("dashboard:invoice_detail", invoice_id=invoice.id)
+    from django.utils import timezone
+
+    periods = set()
+    for dn in delivery_notes:
+        created = timezone.localtime(dn.created_at)
+        periods.add((dn.store.customer_id, created.year, created.month))
+    for customer_id, year, month in periods:
+        for invoice in Invoice.objects.filter(
+            customer_id=customer_id,
+            invoice_year=year,
+            invoice_month=month,
+            invoice_type=Invoice.InvoiceType.BILLING_STATEMENT,
+        ).select_related("customer"):
+            _sync_billing_statement(invoice)
 
 
 @login_required
