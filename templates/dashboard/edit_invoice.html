@@ -52,8 +52,11 @@
                 <tbody id="line-items-body">
                     {% for item in invoice.line_items.all %}
                     <tr style="border-bottom: 1px solid #dee2e6;">
-                        <td style="padding: 12px;">
-                            {{ item.line_no }}
+                        <td style="padding: 12px; white-space: nowrap;">
+                            <input type="number" name="order_{{ item.id }}" value="{{ item.line_no }}" min="1" step="1" class="line-order"
+                                   style="width: 56px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                            <button type="button" onclick="moveRow(this, -1)" title="เลื่อนขึ้น" style="padding: 2px 6px; cursor: pointer;">▲</button>
+                            <button type="button" onclick="moveRow(this, 1)" title="เลื่อนลง" style="padding: 2px 6px; cursor: pointer;">▼</button>
                         </td>
                         <td style="padding: 12px;">
                             <input type="text" name="invoice_no_{{ item.id }}"
@@ -83,7 +86,12 @@
 
         <template id="new-line-item-template">
             <tr style="border-bottom: 1px solid #dee2e6; background: #f8fff8;">
-                <td style="padding: 12px;">ใหม่</td>
+                <td style="padding: 12px; white-space: nowrap;">
+                    <input type="number" name="new_order" min="1" step="1" class="line-order"
+                           style="width: 56px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; text-align: center;">
+                    <button type="button" onclick="moveRow(this, -1)" title="เลื่อนขึ้น" style="padding: 2px 6px; cursor: pointer;">▲</button>
+                    <button type="button" onclick="moveRow(this, 1)" title="เลื่อนลง" style="padding: 2px 6px; cursor: pointer;">▼</button>
+                </td>
                 <td style="padding: 12px;">
                     <input type="text" name="new_invoice_no" placeholder="เลขที่เอกสาร"
                            style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; font-family: monospace;">
@@ -104,9 +112,23 @@
             </tr>
         </template>
         <script>
+        function renumberRows() {
+            document.querySelectorAll("#line-items-body tr").forEach((row, index) => {
+                row.querySelector(".line-order").value = index + 1;
+            });
+        }
+        function moveRow(button, direction) {
+            const row = button.closest("tr");
+            const sibling = direction < 0 ? row.previousElementSibling : row.nextElementSibling;
+            if (!sibling) return;
+            row.parentNode.insertBefore(row, direction < 0 ? sibling : sibling.nextElementSibling);
+            renumberRows();
+        }
         function addLineItem() {
             const template = document.getElementById("new-line-item-template");
-            document.getElementById("line-items-body").appendChild(template.content.cloneNode(true));
+            const body = document.getElementById("line-items-body");
+            body.appendChild(template.content.cloneNode(true));
+            body.lastElementChild.querySelector(".line-order").value = body.children.length;
         }
         </script>
 
@@ -118,6 +140,7 @@
                 <li><strong>รายการสินค้า (ค่าเริ่มต้น):</strong> จะใช้ร่วมกันทุกบรรทัด</li>
                 <li><strong>เลขที่ Invoice:</strong> เลข Invoice จริงจากระบบอื่น (แทนที่เลข DN)</li>
                 <li>จำนวนและยอดเงินของรายการเดิมจะไม่เปลี่ยนแปลง (ดึงจาก Delivery Note)</li>
+                <li><strong>ลำดับ (#):</strong> กด ▲▼ เพื่อเลื่อน หรือพิมพ์เลขลำดับที่ต้องการ ระบบจะเรียงและรันเลข 1, 2, 3… ใหม่เมื่อกดบันทึก</li>
                 <li><strong>เพิ่มรายการ / ลบ:</strong> ยอดเงินให้ใส่แบบยังไม่รวม VAT ระบบจะคำนวณ Subtotal, VAT และยอดรวมใหม่เมื่อกดบันทึก</li>
             </ul>
         </div>

@@ -190,3 +190,35 @@ def test_new_delivery_notes_are_appended_to_existing_billing_statement():
     assert Invoice.objects.filter(customer=customer).count() == 1
     assert list(invoice.line_items.exclude(delivery_note=None).order_by("line_no")
                 .values_list("delivery_note_id", flat=True)) == [first.delivery_note_id, dn2.id, dn3.id]
+
+
+@pytest.mark.django_db
+def test_edit_invoice_reorders_line_items():
+    user = User.objects.create_user(username="biller", password="testpass123")
+    customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
+    invoice = Invoice.objects.create(customer=customer, invoice_month=10, invoice_year=2026)
+    a, b, c = (
+        InvoiceLineItem.objects.create(
+            invoice=invoice, external_invoice_number=name, description="x",
+            quantity=1, amount=Decimal("10"), line_no=n,
+        )
+        for n, name in enumerate(["A", "B", "C"], 1)
+    )
+
+    client = Client()
+    client.force_login(user)
+    client.post(
+        reverse("dashboard:edit_invoice", args=[invoice.id]),
+        {
+            "invoice_number": invoice.invoice_number,
+            "invoice_no_%d" % a.id: "A", "order_%d" % a.id: "1",
+            "invoice_no_%d" % b.id: "B", "order_%d" % b.id: "2",
+            # C typed as 1 -> goes before A, which kept its position
+            "invoice_no_%d" % c.id: "C", "order_%d" % c.id: "1",
+            "new_invoice_no": ["N"], "new_quantity": ["1"], "new_unit": ["PCS"],
+            "new_amount": ["5"], "new_order": ["2"],
+        },
+    )
+    assert list(invoice.line_items.order_by("line_no").values_list("line_no", "external_invoice_number")) == [
+        (1, "C"), (2, "A"), (3, "N"), (4, "B"),
+    ]

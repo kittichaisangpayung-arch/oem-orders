@@ -2026,6 +2026,11 @@ def invoice_detail(request, invoice_id):
     return render(request, template, context)
 
 
+def _parse_line_order(value):
+    value = (value or "").strip()
+    return int(value) if value.isdigit() else None
+
+
 @login_required
 def edit_invoice(request, invoice_id):
     """Edit invoice number and line item descriptions"""
@@ -2041,16 +2046,19 @@ def edit_invoice(request, invoice_id):
         from django.contrib import messages
         from django.db import transaction
         from decimal import InvalidOperation
+        from itertools import zip_longest
 
         # Parse manually added rows before saving anything
         new_rows = []
-        new_fields = zip(
+        new_fields = zip_longest(
             request.POST.getlist("new_invoice_no"),
             request.POST.getlist("new_quantity"),
             request.POST.getlist("new_unit"),
             request.POST.getlist("new_amount"),
+            request.POST.getlist("new_order"),
+            fillvalue="",
         )
-        for doc_no, qty, unit, amount in new_fields:
+        for doc_no, qty, unit, amount, order in new_fields:
             doc_no, qty, unit, amount = doc_no.strip(), qty.strip(), unit.strip(), amount.strip()
             if not (doc_no or qty or amount):
                 continue
@@ -2060,7 +2068,7 @@ def edit_invoice(request, invoice_id):
             except (ValueError, InvalidOperation):
                 messages.error(request, f"จำนวนหรือยอดเงินของรายการใหม่ไม่ถูกต้อง: {doc_no or '-'}")
                 return redirect("dashboard:edit_invoice", invoice_id=invoice.id)
-            new_rows.append((doc_no, quantity, unit or "PCS", amount_value))
+            new_rows.append((doc_no, quantity, unit or "PCS", amount_value, _parse_line_order(order)))
 
         delete_ids = {
             int(pk) for pk in request.POST.getlist("delete_item") if pk.isdigit()
@@ -2095,30 +2103,43 @@ def edit_invoice(request, invoice_id):
                     line_item.external_invoice_number = new_invoice_no
                     line_item.save(update_fields=["external_invoice_number"])
 
-            if delete_ids or new_rows:
-                invoice.line_items.filter(id__in=delete_ids).delete()
-                last_line_no = max(
-                    (item.line_no for item in invoice.line_items.all() if item.id not in delete_ids),
-                    default=0,
+            invoice.line_items.filter(id__in=delete_ids).delete()
+
+            # Sort key: requested position, then rows the user moved before rows
+            # left in place, then original order.
+            sort_keys = {}
+            for line_item in invoice.line_items.order_by("line_no", "id"):
+                requested = _parse_line_order(request.POST.get(f"order_{line_item.id}"))
+                if requested is None:
+                    sort_keys[line_item.id] = (line_item.line_no, 1, line_item.line_no)
+                else:
+                    moved = 0 if requested != line_item.line_no else 1
+                    sort_keys[line_item.id] = (requested, moved, line_item.line_no)
+
+            end = max((key[0] for key in sort_keys.values()), default=0)
+            for offset, (doc_no, quantity, unit, amount_value, requested) in enumerate(new_rows, 1):
+                new_item = InvoiceLineItem.objects.create(
+                    line_no=end + offset,
+                    invoice=invoice,
+                    delivery_note=None,
+                    external_invoice_number=doc_no,
+                    description=default_description,
+                    quantity=quantity,
+                    unit=unit,
+                    amount=amount_value,
                 )
-                for offset, (doc_no, quantity, unit, amount_value) in enumerate(new_rows, 1):
-                    InvoiceLineItem.objects.create(
-                        line_no=last_line_no + offset,
-                        invoice=invoice,
-                        delivery_note=None,
-                        external_invoice_number=doc_no,
-                        description=default_description,
-                        quantity=quantity,
-                        unit=unit,
-                        amount=amount_value,
-                    )
+                if requested is None:
+                    sort_keys[new_item.id] = (end + offset, 1, end + offset)
+                else:
+                    sort_keys[new_item.id] = (requested, 0, end + offset)
 
-                remaining = list(invoice.line_items.order_by("line_no", "id"))
-                for line_no, line_item in enumerate(remaining, 1):
-                    if line_item.line_no != line_no:
-                        line_item.line_no = line_no
-                        line_item.save(update_fields=["line_no"])
+            remaining = sorted(invoice.line_items.order_by("line_no", "id"), key=lambda item: sort_keys[item.id])
+            for line_no, line_item in enumerate(remaining, 1):
+                if line_item.line_no != line_no:
+                    line_item.line_no = line_no
+                    line_item.save(update_fields=["line_no"])
 
+            if delete_ids or new_rows:
                 subtotal = sum((item.amount for item in remaining), Decimal("0"))
                 invoice.subtotal = subtotal
                 invoice.vat_amount = subtotal * (invoice.vat_rate / Decimal("100"))
