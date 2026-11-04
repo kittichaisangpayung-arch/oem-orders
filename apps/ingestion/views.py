@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 
 from apps.core.access import in_sales_group, staff_required
@@ -263,10 +264,16 @@ def manual_entry(request, batch_id):
         'sort_rank', 'barcode'
     )
 
+    selected_store_id = request.GET.get("store", "")
+    if not (selected_store_id.isdigit() and stores.filter(pk=selected_store_id).exists()):
+        selected_store_id = ""
+
     context = {
         "batch": batch,
         "stores": stores,
         "products": products,
+        "selected_store_id": selected_store_id,
+        "return_to_preview": bool(selected_store_id),
     }
     return render(request, "ingestion/manual_entry.html", context)
 
@@ -369,7 +376,7 @@ def finish_manual_entry(request, batch_id):
 
         return JsonResponse({
             "success": True,
-            "redirect_url": f"/ingestion/batch/{batch.pk}/preview/"
+            "redirect_url": reverse("ingestion:batch_preview", args=[batch.pk])
         })
 
     return JsonResponse({"success": False, "error": "Batch already processed"})

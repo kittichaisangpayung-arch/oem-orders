@@ -178,7 +178,7 @@
                     <select id="store-select" required>
                         <option value="">-- เลือกสาขา --</option>
                         {% for store in stores %}
-                        <option value="{{ store.pk }}">{{ store.name }} ({{ store.store_code }})</option>
+                        <option value="{{ store.pk }}"{% if store.pk|stringformat:"s" == selected_store_id %} selected{% endif %}>{{ store.name }} ({{ store.store_code }})</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -234,8 +234,12 @@
         </div>
 
         <div class="action-buttons" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #334155;">
+            {% if return_to_preview %}
+            <a href="{% url 'ingestion:batch_preview' batch.pk %}" class="btn btn-secondary" style="text-decoration:none;">กลับไปหน้า Preview</a>
+            {% else %}
             <button type="button" class="btn btn-primary" onclick="finishEntry()">เสร็จสิ้น - ไปหน้า Preview</button>
             <a href="{% url 'ingestion:cancel_batch' batch.pk %}" class="btn btn-danger" onclick="return confirm('ยกเลิกและลบ Batch นี้?')">ยกเลิก</a>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -355,6 +359,10 @@ function savePO() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            {% if return_to_preview %}
+            window.location.href = "{% url 'ingestion:batch_preview' batch.pk %}";
+            return;
+            {% endif %}
             showMessage(data.message, 'success');
 
             // Add to saved list

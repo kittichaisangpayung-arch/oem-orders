@@ -56,10 +56,13 @@
             <strong style="color:#0c5460;">ℹ️ สาขาที่ไม่มีในชุด PO นี้ ({{ missing_stores|length }} สาขา):</strong>
             <ul style="margin:8px 0; padding-left:20px; color:#0c5460;">
             {% for store in missing_stores %}
-                <li>{{ store.name }} (รหัส: {{ store.store_code }})</li>
+                <li style="margin-bottom:6px;">
+                    {{ store.name }} (รหัส: {{ store.store_code }})
+                    <a href="{% url 'ingestion:manual_entry' batch.pk %}?store={{ store.pk }}" style="margin-left:8px; background:#17a2b8; color:#fff; padding:3px 10px; border-radius:4px; text-decoration:none; font-size:13px;">+ กรอกรายการเอง</a>
+                </li>
             {% endfor %}
             </ul>
-            <p style="margin:8px 0; color:#0c5460;">สาขาเหล่านี้จะไม่มีข้อมูลในรอบนี้</p>
+            <p style="margin:8px 0; color:#0c5460;">สาขาเหล่านี้จะไม่มีข้อมูลในรอบนี้ ถ้าไม่กรอกรายการเอง</p>
         </div>
         {% endif %}
 
