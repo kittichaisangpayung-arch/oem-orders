@@ -4,6 +4,7 @@ from django.test import RequestFactory, TestCase
 from django.utils import timezone
 
 from apps.core.models import Customer, Product, Store
+from apps.dashboard.models import DeliveryNote, DeliveryNoteItem
 from apps.dashboard.product_trends import (
     MAX_COMPARE_PRODUCTS,
     _year_groups,
@@ -13,16 +14,12 @@ from apps.dashboard.product_trends import (
 from apps.ingestion.models import POLineItem, PurchaseOrder, PurchaseOrderBatch
 
 
-def _line(customer, store, product, qty, price, uploaded_at):
-    batch = PurchaseOrderBatch.objects.create(customer=customer)
-    PurchaseOrderBatch.objects.filter(pk=batch.pk).update(uploaded_at=uploaded_at)
-    po = PurchaseOrder.objects.create(
-        batch=batch, customer=customer, store=store,
-        store_code_raw=store.store_code, store_name_raw=store.name, source_filename='t.pdf',
-    )
-    POLineItem.objects.create(
-        purchase_order=po, product=product, barcode_raw=product.barcode,
-        qty=qty, qty2=qty, unit_amount=price, line_total=qty * price, line_no=1,
+def _dn(store, product, qty, price, created_at):
+    dn = DeliveryNote.objects.create(store=store, delivery_address=store.name)
+    DeliveryNote.objects.filter(pk=dn.pk).update(created_at=created_at)
+    DeliveryNoteItem.objects.create(
+        delivery_note=dn, product=product, quantity=qty,
+        unit_price=price, amount=qty * price, line_no=1,
     )
 
 
@@ -57,6 +54,45 @@ class ProductTrendListTests(TestCase):
         self.assertIn('data-year="2025"', html)
         self.assertIn('<noscript><button type="submit"', html)
 
+    def test_totals_come_from_delivery_notes_not_po_lines(self):
+        customer = Customer.objects.create(name='Donki', code='DONKI', parser_key='donki_v1')
+        store = Store.objects.create(customer=customer, store_code='S1', name='Store 1')
+        product = Product.objects.create(barcode='111', description='Product A')
+        tz = timezone.get_current_timezone()
+
+        # PO ordered 10, but the DN bumped it to the minimum of 30.
+        batch = PurchaseOrderBatch.objects.create(customer=customer)
+        PurchaseOrderBatch.objects.filter(pk=batch.pk).update(
+            uploaded_at=datetime(2026, 1, 31, tzinfo=tz)
+        )
+        po = PurchaseOrder.objects.create(
+            batch=batch, customer=customer, store=store,
+            store_code_raw=store.store_code, store_name_raw=store.name, source_filename='t.pdf',
+        )
+        POLineItem.objects.create(
+            purchase_order=po, product=product, barcode_raw=product.barcode,
+            qty=10, qty2=10, unit_amount=5, line_total=50, line_no=1,
+        )
+        dn = DeliveryNote.objects.create(
+            store=store, batch=batch, delivery_address=store.name,
+        )
+        # Uploaded in January, DN created in February.
+        DeliveryNote.objects.filter(pk=dn.pk).update(created_at=datetime(2026, 2, 2, tzinfo=tz))
+        DeliveryNoteItem.objects.create(
+            delivery_note=dn, product=product, quantity=30,
+            unit_price=5, amount=150, line_no=1,
+        )
+
+        response = product_trend_list(RequestFactory().get('/', {'month': ['2026-01', '2026-02']}))
+        html = response.content.decode()
+
+        # DN quantity (30), not the raw PO quantity (10); counted in February.
+        self.assertIn('>30<', html)
+        self.assertNotIn('>10<', html)
+        self.assertIn('฿150', html)
+        self.assertIn('กุมภาพันธ์ 2569', html)
+        self.assertIn('<strong>30</strong>', html)
+
 
 class ProductComparisonTests(TestCase):
     def setUp(self):
@@ -65,9 +101,9 @@ class ProductComparisonTests(TestCase):
         self.a = Product.objects.create(barcode='111', description='Product A')
         self.b = Product.objects.create(barcode='222', description='Product B')
         tz = timezone.get_current_timezone()
-        _line(customer, store, self.a, 10, 5, datetime(2026, 1, 15, tzinfo=tz))
-        _line(customer, store, self.a, 4, 5, datetime(2026, 2, 10, tzinfo=tz))
-        _line(customer, store, self.b, 7, 20, datetime(2026, 2, 20, tzinfo=tz))
+        _dn(store, self.a, 10, 5, datetime(2026, 1, 15, tzinfo=tz))
+        _dn(store, self.a, 4, 5, datetime(2026, 2, 10, tzinfo=tz))
+        _dn(store, self.b, 7, 20, datetime(2026, 2, 20, tzinfo=tz))
 
     def _get(self, params):
         response = product_comparison(RequestFactory().get('/', params))

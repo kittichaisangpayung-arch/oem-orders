@@ -1,5 +1,9 @@
 """
 Product trend analysis views for historical data analysis
+
+Quantities and values come from delivery note lines (after minimum-order
+bumps, overrides and manual edits), grouped by the DN's created_at month
+so they match billing statements.
 """
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -12,7 +16,9 @@ from django.utils.http import urlencode
 
 from apps.core.framing import allow_embedding
 from apps.core.models import Product, Store
-from apps.ingestion.models import POLineItem, PurchaseOrderBatch
+from apps.ingestion.models import PurchaseOrderBatch
+
+from .models import DeliveryNote, DeliveryNoteItem
 
 THAI_MONTHS = [
     'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
@@ -52,6 +58,11 @@ def _selected_months(request):
     return sorted(months, reverse=True)
 
 
+def _data_months():
+    """YYYY-MM keys of months that have delivery notes."""
+    return {d.strftime('%Y-%m') for d in DeliveryNote.objects.dates('created_at', 'month')}
+
+
 def _year_groups(data_months, selected_months):
     """Month picker grouped by year (newest first), all 12 months per year.
 
@@ -87,16 +98,16 @@ def product_trend_list(request):
     stats = {}
     for key in selected_months:
         start, end = _month_range(int(key[:4]), int(key[5:]))
-        rows = POLineItem.objects.filter(
+        rows = DeliveryNoteItem.objects.filter(
             product__is_active=True,
-            purchase_order__batch__uploaded_at__gte=start,
-            purchase_order__batch__uploaded_at__lt=end,
+            delivery_note__created_at__gte=start,
+            delivery_note__created_at__lt=end,
         ).values('product').annotate(
-            qty=Sum('qty2'),
-            value=Sum('line_total'),
-            price_sum=Sum('unit_amount'),
+            qty=Sum('quantity'),
+            value=Sum('amount'),
+            price_sum=Sum('unit_price'),
             line_count=Count('id'),
-            order_count=Count('purchase_order__batch', distinct=True),
+            order_count=Count('delivery_note__batch', distinct=True),
         )
         for r in rows:
             s = stats.setdefault(r['product'], {
@@ -125,9 +136,7 @@ def product_trend_list(request):
         })
     product_stats.sort(key=lambda x: x['total_qty'], reverse=True)
 
-    data_months = {
-        d.strftime('%Y-%m') for d in PurchaseOrderBatch.objects.dates('uploaded_at', 'month')
-    }
+    data_months = _data_months()
 
     context = {
         'product_stats': product_stats,
@@ -154,11 +163,11 @@ def product_trend_detail(request, product_id):
     end_date = datetime.now()
     start_date = end_date - timedelta(days=months*30)
 
-    # Get all line items for this product
-    line_items = POLineItem.objects.filter(
+    # Get all delivery note lines for this product
+    line_items = DeliveryNoteItem.objects.filter(
         product=product,
-        purchase_order__batch__uploaded_at__gte=start_date
-    ).select_related('purchase_order__batch', 'purchase_order__store')
+        delivery_note__created_at__gte=start_date
+    ).select_related('delivery_note__batch', 'delivery_note__store')
 
     # === Monthly Trend ===
     monthly_data = defaultdict(lambda: {
@@ -169,14 +178,14 @@ def product_trend_detail(request, product_id):
     })
 
     for item in line_items:
-        batch_date = item.purchase_order.batch.uploaded_at
-        month_key = batch_date.strftime('%Y-%m')
+        month_key = timezone.localtime(item.delivery_note.created_at).strftime('%Y-%m')
 
-        monthly_data[month_key]['qty'] += item.qty2 or 0
-        monthly_data[month_key]['value'] += item.line_total or Decimal('0')
-        monthly_data[month_key]['batches'].add(item.purchase_order.batch_id)
-        if item.purchase_order.store:
-            monthly_data[month_key]['stores'].add(item.purchase_order.store.name)
+        monthly_data[month_key]['qty'] += item.quantity or 0
+        monthly_data[month_key]['value'] += item.amount or Decimal('0')
+        if item.delivery_note.batch_id:
+            monthly_data[month_key]['batches'].add(item.delivery_note.batch_id)
+        if item.delivery_note.store:
+            monthly_data[month_key]['stores'].add(item.delivery_note.store.name)
 
     # Convert to sorted list
     monthly_trend = []
@@ -196,10 +205,10 @@ def product_trend_detail(request, product_id):
     store_data = defaultdict(lambda: {'qty': 0, 'value': Decimal('0'), 'orders': 0})
 
     for item in line_items:
-        if item.purchase_order.store:
-            store_name = item.purchase_order.store.name
-            store_data[store_name]['qty'] += item.qty2 or 0
-            store_data[store_name]['value'] += item.line_total or Decimal('0')
+        if item.delivery_note.store:
+            store_name = item.delivery_note.store.name
+            store_data[store_name]['qty'] += item.quantity or 0
+            store_data[store_name]['value'] += item.amount or Decimal('0')
             store_data[store_name]['orders'] += 1
 
     # Convert to sorted list (by quantity)
@@ -217,15 +226,15 @@ def product_trend_detail(request, product_id):
     # === Batch History ===
     batch_history = []
     batches = PurchaseOrderBatch.objects.filter(
-        purchase_orders__line_items__product=product,
-        uploaded_at__gte=start_date
+        delivery_notes__items__product=product,
+        delivery_notes__created_at__gte=start_date
     ).distinct().order_by('-uploaded_at')
 
     for batch in batches:
-        batch_items = line_items.filter(purchase_order__batch=batch)
-        total_qty = batch_items.aggregate(total=Sum('qty2'))['total'] or 0
-        total_value = batch_items.aggregate(total=Sum('line_total'))['total'] or 0
-        store_count = batch_items.values('purchase_order__store').distinct().count()
+        batch_items = line_items.filter(delivery_note__batch=batch)
+        total_qty = batch_items.aggregate(total=Sum('quantity'))['total'] or 0
+        total_value = batch_items.aggregate(total=Sum('amount'))['total'] or 0
+        store_count = batch_items.values('delivery_note__store').distinct().count()
 
         batch_history.append({
             'batch': batch,
@@ -286,9 +295,7 @@ def _selected_product_ids(request):
 def product_comparison(request):
     """Monthly trend of several products side by side (?products=<id>&month=YYYY-MM...)."""
 
-    data_months = {
-        d.strftime('%Y-%m') for d in PurchaseOrderBatch.objects.dates('uploaded_at', 'month')
-    }
+    data_months = _data_months()
     selected_months = _selected_months(request) or (
         sorted(data_months, reverse=True)[:DEFAULT_COMPARE_MONTHS]
         or [timezone.localdate().strftime('%Y-%m')]
@@ -303,11 +310,11 @@ def product_comparison(request):
     if product_ids:
         for key in months_asc:
             start, end = _month_range(int(key[:4]), int(key[5:]))
-            rows = POLineItem.objects.filter(
+            rows = DeliveryNoteItem.objects.filter(
                 product_id__in=product_ids,
-                purchase_order__batch__uploaded_at__gte=start,
-                purchase_order__batch__uploaded_at__lt=end,
-            ).values('product').annotate(qty=Sum('qty2'), value=Sum('line_total'))
+                delivery_note__created_at__gte=start,
+                delivery_note__created_at__lt=end,
+            ).values('product').annotate(qty=Sum('quantity'), value=Sum('amount'))
             for r in rows:
                 by_product[r['product']][key] = {'qty': r['qty'] or 0, 'value': r['value'] or 0}
 
