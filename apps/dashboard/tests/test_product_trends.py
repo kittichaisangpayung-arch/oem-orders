@@ -93,6 +93,25 @@ class ProductTrendListTests(TestCase):
         self.assertIn('กุมภาพันธ์ 2569', html)
         self.assertIn('<strong>30</strong>', html)
 
+    def test_customer_filter_keeps_only_that_customers_notes(self):
+        donki = Customer.objects.create(name='Donki', code='DONKI', parser_key='donki_v1')
+        lopia = Customer.objects.create(name='Lopia', code='LOPIA', parser_key='lopia_v1')
+        donki_store = Store.objects.create(customer=donki, store_code='D1', name='Donki 1')
+        lopia_store = Store.objects.create(customer=lopia, store_code='L1', name='Lopia 1')
+        product = Product.objects.create(barcode='111', description='Product A')
+        when = datetime(2026, 2, 10, tzinfo=timezone.get_current_timezone())
+        _dn(donki_store, product, 10, 5, when)
+        _dn(lopia_store, product, 40, 5, when)
+
+        html = product_trend_list(RequestFactory().get('/', {
+            'month': '2026-02', 'customer': str(donki.pk),
+        })).content.decode()
+
+        self.assertIn('>10<', html)
+        self.assertNotIn('>40<', html)
+        self.assertNotIn('>50<', html)
+        self.assertIn(f'value="{donki.pk}" selected', html)
+
 
 class ProductComparisonTests(TestCase):
     def setUp(self):

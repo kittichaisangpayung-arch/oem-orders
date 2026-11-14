@@ -18,7 +18,7 @@
                 {% endif %}
                 {{ product.description }}
             </h2>
-            <p class="text-muted mb-0">Barcode: <code>{{ product.barcode }}</code></p>
+            <p class="text-muted mb-0">Barcode: <code>{{ product.barcode }}</code>{% if selected_customer %} · ลูกค้า: <strong>{{ selected_customer.name }}</strong>{% endif %}</p>
         </div>
 
         <!-- Time Range Filter -->

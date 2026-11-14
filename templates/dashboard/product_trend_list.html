@@ -78,6 +78,29 @@ button.period-btn {
     cursor: pointer;
     font-family: inherit;
 }
+.customer-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+.customer-filter select {
+    padding: 7px 14px;
+    border: 2px solid var(--pink);
+    border-radius: 20px;
+    background: #fff;
+    color: var(--pink-dark);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.customer-filter select:focus-visible {
+    outline: 3px solid var(--purple);
+    outline-offset: 2px;
+}
 .month-breakdown {
     margin-top: 12px;
     font-size: 12px;
@@ -230,11 +253,25 @@ button.period-btn {
             <div class="stat-badge">฿{{ grand_total_value|floatformat:0|intcomma }}</div>
         </div>
         <div class="period-buttons">
-            <a href="?" class="period-btn">เดือนนี้</a>
+            <label class="customer-filter">
+                <span>ลูกค้า</span>
+                <select name="customer">
+                    <option value="">ทั้งหมด</option>
+                    {% for customer in customers %}
+                    <option value="{{ customer.pk }}" {% if customer == selected_customer %}selected{% endif %}>{{ customer.name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <a href="?{% if selected_customer %}customer={{ selected_customer.pk }}{% endif %}" class="period-btn">เดือนนี้</a>
             <a href="{% url 'dashboard:product_comparison' %}?{{ month_query }}" class="period-btn">📈 เปรียบเทียบสินค้า</a>
             <noscript><button type="submit" class="period-btn active">แสดงผล</button></noscript>
         </div>
         {% include "dashboard/_month_picker.html" %}
+        <script>
+        document.querySelector('.customer-filter select').addEventListener('change', function () {
+            this.form.dispatchEvent(new Event('autosubmit'));
+        });
+        </script>
     </form>
 
     <!-- Product Grid -->
@@ -281,7 +318,7 @@ button.period-btn {
             </div>
             {% endif %}
 
-            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?{{ month_query }}" class="view-detail-btn">
+            <a href="{% url 'dashboard:product_trend_detail' stat.product.id %}?{{ filter_query }}" class="view-detail-btn">
                 ดูรายละเอียด →
             </a>
         </div>
@@ -291,7 +328,7 @@ button.period-btn {
     <div class="empty-state">
         <div class="empty-state-icon">📭</div>
         <h3>ไม่พบข้อมูลสินค้า</h3>
-        <p>ไม่มีข้อมูลการสั่งซื้อในเดือน{{ selected_labels|join:", " }}</p>
+        <p>ไม่มีข้อมูลการสั่งซื้อ{% if selected_customer %}ของ {{ selected_customer.name }} {% endif %}ในเดือน{{ selected_labels|join:", " }}</p>
     </div>
     {% endif %}
 </div>

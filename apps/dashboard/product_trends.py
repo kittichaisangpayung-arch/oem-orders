@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.utils.http import urlencode
 
 from apps.core.framing import allow_embedding
-from apps.core.models import Product, Store
+from apps.core.models import Customer, Product, Store
 from apps.ingestion.models import PurchaseOrderBatch
 
 from .models import DeliveryNote, DeliveryNoteItem
@@ -58,9 +58,28 @@ def _selected_months(request):
     return sorted(months, reverse=True)
 
 
-def _data_months():
-    """YYYY-MM keys of months that have delivery notes."""
-    return {d.strftime('%Y-%m') for d in DeliveryNote.objects.dates('created_at', 'month')}
+def _data_months(customer=None):
+    """YYYY-MM keys of months that have delivery notes (optionally for one customer)."""
+    notes = DeliveryNote.objects.all()
+    if customer:
+        notes = notes.filter(store__customer=customer)
+    return {d.strftime('%Y-%m') for d in notes.dates('created_at', 'month')}
+
+
+def _selected_customer(request):
+    """Active customer from ?customer=<id>, or None for all customers."""
+    value = request.GET.get('customer', '')
+    if not value.isdigit():
+        return None
+    return Customer.objects.filter(pk=int(value), is_active=True).first()
+
+
+def _filter_query(months, customer):
+    """Query string that carries the month and customer filters between trend pages."""
+    params = [('month', m) for m in months]
+    if customer:
+        params.append(('customer', customer.pk))
+    return urlencode(params)
 
 
 def _year_groups(data_months, selected_months):
@@ -91,15 +110,24 @@ def _year_groups(data_months, selected_months):
 
 @allow_embedding
 def product_trend_list(request):
-    """Product summary for one or more calendar months (?month=YYYY-MM&month=..., default: current month)."""
+    """Product summary for one or more calendar months (?month=YYYY-MM&month=..., default: current month).
+
+    ?customer=<id> limits it to one customer's delivery notes.
+    """
 
     selected_months = _selected_months(request) or [timezone.localdate().strftime('%Y-%m')]
+
+    customers = Customer.objects.filter(is_active=True).order_by('name')
+    selected_customer = _selected_customer(request)
+
+    items = DeliveryNoteItem.objects.filter(product__is_active=True)
+    if selected_customer:
+        items = items.filter(delivery_note__store__customer=selected_customer)
 
     stats = {}
     for key in selected_months:
         start, end = _month_range(int(key[:4]), int(key[5:]))
-        rows = DeliveryNoteItem.objects.filter(
-            product__is_active=True,
+        rows = items.filter(
             delivery_note__created_at__gte=start,
             delivery_note__created_at__lt=end,
         ).values('product').annotate(
@@ -136,13 +164,16 @@ def product_trend_list(request):
         })
     product_stats.sort(key=lambda x: x['total_qty'], reverse=True)
 
-    data_months = _data_months()
+    data_months = _data_months(selected_customer)
 
     context = {
         'product_stats': product_stats,
+        'customers': customers,
+        'selected_customer': selected_customer,
         'selected_months': selected_months,
         'selected_labels': [_month_label(m) for m in reversed(selected_months)],
-        'month_query': urlencode([('month', m) for m in selected_months]),
+        'month_query': _filter_query(selected_months, None),
+        'filter_query': _filter_query(selected_months, selected_customer),
         'year_groups': _year_groups(data_months, selected_months),
         'active_year': int(selected_months[0][:4]),
         'grand_total_qty': sum(p['total_qty'] for p in product_stats),
@@ -168,6 +199,9 @@ def product_trend_detail(request, product_id):
         product=product,
         delivery_note__created_at__gte=start_date
     ).select_related('delivery_note__batch', 'delivery_note__store')
+    selected_customer = _selected_customer(request)
+    if selected_customer:
+        line_items = line_items.filter(delivery_note__store__customer=selected_customer)
 
     # === Monthly Trend ===
     monthly_data = defaultdict(lambda: {
@@ -229,6 +263,8 @@ def product_trend_detail(request, product_id):
         delivery_notes__items__product=product,
         delivery_notes__created_at__gte=start_date
     ).distinct().order_by('-uploaded_at')
+    if selected_customer:
+        batches = batches.filter(delivery_notes__store__customer=selected_customer)
 
     for batch in batches:
         batch_items = line_items.filter(delivery_note__batch=batch)
@@ -262,7 +298,8 @@ def product_trend_detail(request, product_id):
 
     context = {
         'product': product,
-        'back_query': urlencode([('month', m) for m in _selected_months(request)]),
+        'back_query': _filter_query(_selected_months(request), selected_customer),
+        'selected_customer': selected_customer,
         'monthly_trend': monthly_trend,
         'store_distribution': store_distribution,
         'batch_history': batch_history,
