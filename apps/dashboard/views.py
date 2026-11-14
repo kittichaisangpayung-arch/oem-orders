@@ -419,6 +419,7 @@ def store_matrix(request):
         "product__id", "product__barcode", "product__description",
         "product__sort_rank", "product__min_order_qty", "product__image",
         "purchase_order__store__id", "purchase_order__store__name",
+        "purchase_order__batch_id",
     ).annotate(total_qty2=Sum("qty2"), total_line_amount=Sum("line_total"))
 
     money_rows = qs.values(
@@ -427,8 +428,9 @@ def store_matrix(request):
 
     stores = {}
     products = {}
-    matrix = defaultdict(dict)
-    price_matrix = defaultdict(dict)
+    # matrix[product][store][batch] = [qty, amount]. Minimum order qty and
+    # overrides apply per batch, the same way delivery notes are created.
+    matrix = defaultdict(lambda: defaultdict(dict))
 
     # Get customer-specific barcodes if customer is selected
     customer_barcodes = {}
@@ -462,15 +464,9 @@ def store_matrix(request):
                 "image": row["product__image"],
             }
 
-        qty = row["total_qty2"]
-        amount = row["total_line_amount"] or 0
-        matrix[product_id][store_id] = qty
-
-        # Calculate average unit price for this product-store combination
-        if qty > 0:
-            price_matrix[product_id][store_id] = amount / qty
-        else:
-            price_matrix[product_id][store_id] = 0
+        per_batch = matrix[product_id][store_id].setdefault(row["purchase_order__batch_id"], [0, Decimal("0")])
+        per_batch[0] += row["total_qty2"]
+        per_batch[1] += row["total_line_amount"] or Decimal("0")
 
     store_money = {}
     for row in money_rows:
@@ -512,9 +508,9 @@ def store_matrix(request):
 
     single_batch_id = request.GET.get("batch") or None
     overrides = {}
-    if single_batch_id:
-        for o in StoreProductOverride.objects.filter(purchase_order_batch_id=single_batch_id):
-            overrides[(o.product_id, o.store_id)] = o.override_qty
+    override_filter = {"purchase_order_batch_id": single_batch_id} if single_batch_id else {}
+    for o in StoreProductOverride.objects.filter(**override_filter):
+        overrides[(o.product_id, o.store_id, o.purchase_order_batch_id)] = o.override_qty
 
     # Calculate adjusted totals per store
     store_adjusted_totals = defaultdict(int)
@@ -525,37 +521,35 @@ def store_matrix(request):
         p = products[pid]
         cells = []
         for sid in sorted_store_ids:
-            qty = matrix[pid].get(sid, 0)
+            batches = matrix[pid].get(sid, {})
+            qty = sum(q for q, _ in batches.values())
             claimed = claimed_by_product_store.get((pid, sid), 0)
             compensated = compensation_by_product_store.get((pid, sid), 0)
-            net_qty = qty + claimed + compensated
             minimum = p["min_order_qty"]
-            unit_price = price_matrix[pid].get(sid, 0)
 
-            overridden = (pid, sid) in overrides
-            if overridden:
-                display_qty = overrides[(pid, sid)]
-                adjusted = False
-            elif qty > 0 and minimum > 0 and qty < minimum:
-                # Apply minimum only to actual order qty (not including claims/compensations)
-                display_qty = minimum
-                adjusted = True
-            else:
-                # Show only order qty, not including claims/compensations
-                display_qty = qty
-                adjusted = False
+            # Each batch is adjusted on its own, matching how its delivery note
+            # was built: an override wins, otherwise an order below the minimum
+            # is raised to it. A batch the store never ordered stays out.
+            display_qty = 0
+            adjusted_amount = Decimal("0")
+            adjusted = False
+            overridden = False
+            for batch_id, (batch_qty, batch_amount) in batches.items():
+                unit_price = batch_amount / batch_qty if batch_qty > 0 else Decimal("0")
+                override_key = (pid, sid, batch_id)
+                if override_key in overrides:
+                    batch_display = overrides[override_key]
+                    overridden = True
+                elif batch_qty > 0 and minimum > 0 and batch_qty < minimum:
+                    batch_display = minimum
+                    adjusted = True
+                else:
+                    batch_display = batch_qty
+                display_qty += batch_display
+                adjusted_amount += Decimal(batch_display) * unit_price
 
-            # For adjusted amount calculation: use original qty adjusted to minimum (not including claims)
-            if overridden:
-                adjusted_qty_for_amount = overrides[(pid, sid)]
-            elif qty > 0 and minimum > 0 and qty < minimum:
-                adjusted_qty_for_amount = minimum
-            else:
-                adjusted_qty_for_amount = qty
-
-            # Accumulate adjusted quantity (display_qty is order only, with minimum applied) and amount
             store_adjusted_totals[sid] += display_qty
-            store_adjusted_amounts[sid] += Decimal(str(adjusted_qty_for_amount)) * Decimal(str(unit_price))
+            store_adjusted_amounts[sid] += adjusted_amount
 
             cells.append({
                 "qty": display_qty,

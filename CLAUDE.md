@@ -28,7 +28,7 @@ venv/Scripts/python -m pytest apps/dashboard/tests --nomigrations -q
 
 - ต้องใช้ `venv/Scripts/python` (Python ของระบบไม่มี pytest-django)
 - ต้องใส่ `--nomigrations` เพราะ migration `0014_merge_20260927_1223` ของ dashboard ไม่อยู่ใน repo
-- มี 3 test ที่ fail อยู่ก่อนแล้ว: 2 test ใน `test_production_claims.py` และ `test_store_matrix_claim_adds_to_qty_before_min_order_bump`
+- มี 2 test ที่ fail อยู่ก่อนแล้ว ทั้งคู่อยู่ใน `test_production_claims.py`
 
 ## Deploy (PythonAnywhere: terzanalak.pythonanywhere.com)
 

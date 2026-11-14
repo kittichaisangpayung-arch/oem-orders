@@ -112,6 +112,36 @@ def test_store_matrix_adjustment_and_money_totals():
 
 
 @pytest.mark.django_db
+def test_minimum_applied_per_batch_not_on_combined_qty():
+    """Each batch gets its own delivery note, so the minimum applies per batch.
+
+    A store ordering 6 twice (minimum 10) ships 20, not the combined 12.
+    """
+    user = User.objects.create_user(username="viewer4", password="testpass123")
+    customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
+    store = Store.objects.create(customer=customer, store_code="S1", name="Store A")
+    product = Product.objects.create(barcode="5555555555555", description="Per batch", min_order_qty=10)
+
+    for qty in (6, 6):
+        _make_po_line(customer, store, product, qty2=qty, unit_amount=5,
+                      batch=PurchaseOrderBatch.objects.create(customer=customer))
+
+    client = Client()
+    client.force_login(user)
+    response = client.get(reverse("dashboard:store_matrix"))
+
+    row = response.context["store_totals"][0]
+    assert row["total_amount"] == 60          # 12 ordered x 5, raw PO amount
+    assert row["adjusted_total"] == 20        # each batch of 6 raised to 10
+    assert row["adjusted_amount"] == 100      # 20 x 5
+    assert response.context["grand_adjusted_amount"] == 100
+
+    cell = response.context["table_rows"][0]["cells"][0]
+    assert cell["qty"] == 20
+    assert cell["adjusted"] is True
+
+
+@pytest.mark.django_db
 def test_store_matrix_claim_adds_to_qty_before_min_order_bump():
     user = User.objects.create_user(username="viewer3", password="testpass123")
     customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
@@ -148,9 +178,11 @@ def test_store_matrix_claim_adds_to_qty_before_min_order_bump():
         idx = store_names.index(store_name)
         return table_rows[barcode]["cells"][idx]
 
-    # Store A: 3 + 5 claimed = 8, still below min_order_qty of 10 -> bumped to 10, adjusted.
+    # Store A: the cell shows the order qty bumped to the minimum (10). The
+    # claim of 5 is reported in its own column and does not change the bump.
     cell = cell_for("4444444444444", "Store A")
     assert cell["qty"] == 10
+    assert cell["claimed_qty"] == 5
     assert cell["adjusted"] is True
 
     # Store B: no claim, 20 stays at 20, not adjusted.
@@ -158,9 +190,9 @@ def test_store_matrix_claim_adds_to_qty_before_min_order_bump():
     assert cell["qty"] == 20
     assert cell["adjusted"] is False
 
-    # Store C: ordered 0, but a claim of 7 makes it non-zero -> now eligible
-    # for the min-qty bump too, since claims can turn a real zero into a
-    # real order that still needs to meet the minimum.
+    # Store C: ordered 0, so nothing is bumped. The claim of 7 shows in the
+    # claim column only.
     cell = cell_for("4444444444444", "Store C")
-    assert cell["qty"] == 10
-    assert cell["adjusted"] is True
+    assert cell["qty"] == 0
+    assert cell["claimed_qty"] == 7
+    assert cell["adjusted"] is False

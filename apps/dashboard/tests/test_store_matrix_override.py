@@ -88,7 +88,7 @@ def test_non_staff_cannot_set_override():
 
 
 @pytest.mark.django_db
-def test_override_ignored_when_no_single_batch_selected():
+def test_override_counts_but_not_editable_when_no_single_batch_selected():
     staff = User.objects.create_user(username="staffuser2", password="testpass123", is_staff=True)
     customer = Customer.objects.create(name="Donki", code="DONKI", parser_key="donki_v1")
     store = Store.objects.create(customer=customer, store_code="S1", name="Store 1")
@@ -103,10 +103,11 @@ def test_override_ignored_when_no_single_batch_selected():
     client = Client()
     client.force_login(staff)
 
-    # No batch filter -> override must not apply, and edit controls hidden.
+    # No batch filter -> editing is disabled, but saved overrides still count,
+    # otherwise the all-batches total would not match the delivery notes.
     response = client.get(reverse("dashboard:store_matrix"))
     assert response.context["can_override"] is False
     table_rows = {row["product"]["barcode"]: row for row in response.context["table_rows"]}
     cell = table_rows["1234567890123"]["cells"][0]
-    assert cell["qty"] == 10
-    assert cell["overridden"] is False
+    assert cell["qty"] == 99
+    assert cell["overridden"] is True
